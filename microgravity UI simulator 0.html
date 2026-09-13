@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microgravity UI Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 30%, #0f0f23 70%, #000000 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Starfield background */
+        .starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: twinkle 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .control-panel h3 {
+            margin-bottom: 15px;
+            color: #64ffda;
+            font-size: 18px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .slider {
+            width: 150px;
+            height: 5px;
+            background: #333;
+            outline: none;
+            border-radius: 5px;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #64ffda;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .button-control {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .button-control:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .floating-element {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-element:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .floating-element:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+
+        .floating-element.dragging {
+            z-index: 100;
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            padding: 25px;
+            width: 280px;
+            min-height: 160px;
+            color: white;
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: #64ffda;
+            font-size: 20px;
+        }
+
+        .card p {
+            line-height: 1.6;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+
+        .button:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-3px);
+        }
+
+        .circular-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .circular-button:hover {
+            background: linear-gradient(135deg, #ee5a52 0%, #ff6b6b 100%);
+            transform: scale(1.1);
+        }
+
+        .notification {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.2) 0%, rgba(100, 255, 218, 0.1) 100%);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            padding: 20px;
+            width: 300px;
+            color: white;
+        }
+
+        .notification .title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #64ffda;
+        }
+
+        .slider-element {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            padding: 20px;
+            width: 250px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .mini-slider {
+            flex: 1;
+            height: 5px;
+            background: #333;
+            border-radius: 5px;
+            -webkit-appearance: none;
+            outline: none;
+        }
+
+        .mini-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #64ffda;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .physics-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            font-size: 12px;
+            max-width: 200px;
+        }
+
+        .trail {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(100, 255, 218, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fadeTrail 1s ease-out forwards;
+        }
+
+        @keyframes fadeTrail {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.1);
+            }
+        }
+
+        .collision-effect {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #64ffda;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: collisionPulse 0.5s ease-out forwards;
+        }
+
+        @keyframes collisionPulse {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        .floating-element.bouncing {
+            animation: bounce 0.3s ease-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="starfield"></div>
+    
+    <div class="control-panel">
+        <h3>🚀 Microgravity Controls</h3>
+        
+        <div class="control-group">
+            <label>Gravity Strength</label>
+            <input type="range" class="slider" id="gravitySlider" min="0" max="2" step="0.1" value="0.3">
+        </div>
+        
+        <div class="control-group">
+            <label>Air Resistance</label>
+            <input type="range" class="slider" id="frictionSlider" min="0.9" max="1" step="0.01" value="0.995">
+        </div>
+        
+        <div class="control-group">
+            <label>Bounce Factor</label>
+            <input type="range" class="slider" id="bounceSlider" min="0.3" max="0.9" step="0.1" value="0.7">
+        </div>
+        
+        <button class="button-control" onclick="addRandomElement()">Add Element</button>
+        <button class="button-control" onclick="resetSimulation()">Reset</button>
+        <button class="button-control" onclick="toggleTrails()">Toggle Trails</button>
+    </div>
+
+    <div class="physics-info">
+        <div><strong>Active Elements:</strong> <span id="elementCount">0</span></div>
+        <div><strong>Total Collisions:</strong> <span id="collisionCount">0</span></div>
+        <div><strong>Average Velocity:</strong> <span id="avgVelocity">0</span> px/s</div>
+    </div>
+
+    <script>
+        class MicrogravitySimulator {
+            constructor() {
+                this.elements = [];
+                this.gravity = 0.3;
+                this.friction = 0.995;
+                this.bounceFactor = 0.7;
+                this.collisionCount = 0;
+                this.showTrails = true;
+                this.isDragging = false;
+                this.dragElement = null;
+                this.dragOffset = { x: 0, y: 0 };
+                this.lastMousePos = { x: 0, y: 0 };
+                this.mouseVelocity = { x: 0, y: 0 };
+                
+                this.initializeControls();
+                this.createInitialElements();
+                this.startPhysicsLoop();
+                this.bindEvents();
+            }
+
+            initializeControls() {
+                document.getElementById('gravitySlider').addEventListener('input', (e) => {
+                    this.gravity = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('frictionSlider').addEventListener('input', (e) => {
+                    this.friction = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('bounceSlider').addEventListener('input', (e) => {
+                    this.bounceFactor = parseFloat(e.target.value);
+                });
+            }
+
+            createInitialElements() {
+                // Create diverse initial elements
+                this.createElement('card', 200, 150, `
+                    <h3>Space Navigation</h3>
+                    <p>Navigate through zero gravity with intuitive controls and realistic physics simulation.</p>
+                `);
+                
+                this.createElement('button', 600, 200, 'Launch Mission');
+                this.createElement('circular-button', 800, 300, '🚀');
+                
+                this.createElement('notification', 300, 400, `
+                    <div class="title">System Alert</div>
+                    <div>Microgravity environment active. All UI elements are now floating freely.</div>
+                `);
+                
+                this.createElement('card', 700, 500, `
+                    <h3>Physics Engine</h3>
+                    <p>Advanced collision detection, momentum conservation, and realistic orbital mechanics.</p>
+                `);
+                
+                this.createElement('slider-element', 150, 600, `
+                    <span>Volume</span>
+                    <input type="range" class="mini-slider" min="0" max="100" value="75">
+                `);
+                
+                this.createElement('button', 900, 150, 'Data Analysis');
+                this.createElement('circular-button', 400, 250, '⚙️');
+            }
+
+            createElement(type, x, y, content) {
+                const element = document.createElement('div');
+                element.className = `floating-element ${type}`;
+                element.innerHTML = content;
+                element.style.left = x + 'px';
+                element.style.top = y + 'px';
+                
+                const physics = {
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    mass: type === 'card' ? 2 : 1,
+                    width: 0,
+                    height: 0,
+                    rotation: 0,
+                    angularVelocity: (Math.random() - 0.5) * 0.02
+                };
+                
+                document.body.appendChild(element);
+                
+                // Get actual dimensions after adding to DOM
+                setTimeout(() => {
+                    const rect = element.getBoundingClientRect();
+                    physics.width = rect.width;
+                    physics.height = rect.height;
+                }, 0);
+                
+                this.elements.push({ element, physics, type });
+                this.updateElementCount();
+            }
+
+            bindEvents() {
+                document.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+            }
+
+            handleMouseDown(e) {
+                const clickedElement = e.target.closest('.floating-element');
+                if (clickedElement) {
+                    this.isDragging = true;
+                    this.dragElement = this.elements.find(el => el.element === clickedElement);
+                    
+                    if (this.dragElement) {
+                        const rect = clickedElement.getBoundingClientRect();
+                        this.dragOffset.x = e.clientX - rect.left;
+                        this.dragOffset.y = e.clientY - rect.top;
+                        
+                        clickedElement.classList.add('dragging');
+                        this.lastMousePos = { x: e.clientX, y: e.clientY };
+                        this.mouseVelocity = { x: 0, y: 0 };
+                    }
+                }
+            }
+
+            handleMouseMove(e) {
+                if (this.isDragging && this.dragElement) {
+                    const deltaX = e.clientX - this.lastMousePos.x;
+                    const deltaY = e.clientY - this.lastMousePos.y;
+                    
+                    this.mouseVelocity.x = deltaX * 0.5;
+                    this.mouseVelocity.y = deltaY * 0.5;
+                    
+                    this.dragElement.physics.x = e.clientX - this.dragOffset.x;
+                    this.dragElement.physics.y = e.clientY - this.dragOffset.y;
+                    
+                    this.updateElementPosition(this.dragElement);
+                    
+                    if (this.showTrails) {
+                        this.createTrail(e.clientX, e.clientY);
+                    }
+                    
+                    this.lastMousePos = { x: e.clientX, y: e.clientY };
+                }
+            }
+
+            handleMouseUp(e) {
+                if (this.isDragging && this.dragElement) {
+                    this.dragElement.element.classList.remove('dragging');
+                    
+                    // Apply release velocity
+                    this.dragElement.physics.vx = this.mouseVelocity.x * 0.3;
+                    this.dragElement.physics.vy = this.mouseVelocity.y * 0.3;
+                    this.dragElement.physics.angularVelocity = (Math.random() - 0.5) * 0.1;
+                    
+                    this.isDragging = false;
+                    this.dragElement = null;
+                }
+            }
+
+            handleKeyDown(e) {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        this.applyRandomForces();
+                        break;
+                    case 'r':
+                        this.resetSimulation();
+                        break;
+                    case 'a':
+                        addRandomElement();
+                        break;
+                }
+            }
+
+            applyRandomForces() {
+                this.elements.forEach(el => {
+                    el.physics.vx += (Math.random() - 0.5) * 10;
+                    el.physics.vy += (Math.random() - 0.5) * 10;
+                    el.physics.angularVelocity += (Math.random() - 0.5) * 0.2;
+                });
+            }
+
+            updatePhysics() {
+                this.elements.forEach(el => {
+                    if (this.isDragging && el === this.dragElement) return;
+                    
+                    // Apply gravity
+                    el.physics.vy += this.gravity;
+                    
+                    // Apply friction
+                    el.physics.vx *= this.friction;
+                    el.physics.vy *= this.friction;
+                    el.physics.angularVelocity *= this.friction;
+                    
+                    // Update position
+                    el.physics.x += el.physics.vx;
+                    el.physics.y += el.physics.vy;
+                    el.physics.rotation += el.physics.angularVelocity;
+                    
+                    // Boundary collisions
+                    this.handleBoundaryCollisions(el);
+                    
+                    this.updateElementPosition(el);
+                    
+                    // Create trails
+                    if (this.showTrails && (Math.abs(el.physics.vx) > 1 || Math.abs(el.physics.vy) > 1)) {
+                        this.createTrail(el.physics.x + el.physics.width/2, el.physics.y + el.physics.height/2);
+                    }
+                });
+                
+                // Check element collisions
+                this.checkCollisions();
+                this.updateStats();
+            }
+
+            handleBoundaryCollisions(el) {
+                const margin = 50;
+                
+                if (el.physics.x < 0) {
+                    el.physics.x = 0;
+                    el.physics.vx = Math.abs(el.physics.vx) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x, el.physics.y);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+                
+                if (el.physics.x + el.physics.width > window.innerWidth) {
+                    el.physics.x = window.innerWidth - el.physics.width;
+                    el.physics.vx = -Math.abs(el.physics.vx) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x + el.physics.width, el.physics.y);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+                
+                if (el.physics.y < 0) {
+                    el.physics.y = 0;
+                    el.physics.vy = Math.abs(el.physics.vy) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x, el.physics.y);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+                
+                if (el.physics.y + el.physics.height > window.innerHeight - margin) {
+                    el.physics.y = window.innerHeight - el.physics.height - margin;
+                    el.physics.vy = -Math.abs(el.physics.vy) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x, el.physics.y + el.physics.height);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+            }
+
+            checkCollisions() {
+                for (let i = 0; i < this.elements.length; i++) {
+                    for (let j = i + 1; j < this.elements.length; j++) {
+                        const el1 = this.elements[i];
+                        const el2 = this.elements[j];
+                        
+                        if (this.isColliding(el1, el2)) {
+                            this.resolveCollision(el1, el2);
+                            this.collisionCount++;
+                            
+                            // Create collision effect
+                            const centerX = (el1.physics.x + el2.physics.x) / 2;
+                            const centerY = (el1.physics.y + el2.physics.y) / 2;
+                            this.createCollisionEffect(centerX, centerY);
+                            
+                            el1.element.classList.add('bouncing');
+                            el2.element.classList.add('bouncing');
+                            setTimeout(() => {
+                                el1.element.classList.remove('bouncing');
+                                el2.element.classList.remove('bouncing');
+                            }, 300);
+                        }
+                    }
+                }
+            }
+
+            isColliding(el1, el2) {
+                return !(el1.physics.x + el1.physics.width < el2.physics.x ||
+                        el2.physics.x + el2.physics.width < el1.physics.x ||
+                        el1.physics.y + el1.physics.height < el2.physics.y ||
+                        el2.physics.y + el2.physics.height < el1.physics.y);
+            }
+
+            resolveCollision(el1, el2) {
+                // Simple elastic collision
+                const tempVx = el1.physics.vx;
+                const tempVy = el1.physics.vy;
+                
+                el1.physics.vx = el2.physics.vx * this.bounceFactor;
+                el1.physics.vy = el2.physics.vy * this.bounceFactor;
+                el2.physics.vx = tempVx * this.bounceFactor;
+                el2.physics.vy = tempVy * this.bounceFactor;
+                
+                // Separate overlapping elements
+                const overlapX = (el1.physics.x + el1.physics.width) - el2.physics.x;
+                const overlapY = (el1.physics.y + el1.physics.height) - el2.physics.y;
+                
+                if (Math.abs(overlapX) < Math.abs(overlapY)) {
+                    el1.physics.x -= overlapX / 2;
+                    el2.physics.x += overlapX / 2;
+                } else {
+                    el1.physics.y -= overlapY / 2;
+                    el2.physics.y += overlapY / 2;
+                }
+            }
+
+            updateElementPosition(el) {
+                el.element.style.left = el.physics.x + 'px';
+                el.element.style.top = el.physics.y + 'px';
+                el.element.style.transform = `rotate(${el.physics.rotation}rad)`;
+            }
+
+            createTrail(x, y) {
+                const trail = document.createElement('div');
+                trail.className = 'trail';
+                trail.style.left = x + 'px';
+                trail.style.top = y + 'px';
+                document.body.appendChild(trail);
+                
+                setTimeout(() => {
+                    if (trail.parentNode) {
+                        trail.parentNode.removeChild(trail);
+                    }
+                }, 1000);
+            }
+
+            createCollisionEffect(x, y) {
+                const effect = document.createElement('div');
+                effect.className = 'collision-effect';
+                effect.style.left = (x - 10) + 'px';
+                effect.style.top = (y - 10) + 'px';
+                document.body.appendChild(effect);
+                
+                setTimeout(() => {
+                    if (effect.parentNode) {
+                        effect.parentNode.removeChild(effect);
+                    }
+                }, 500);
+            }
+
+            updateStats() {
+                document.getElementById('elementCount').textContent = this.elements.length;
+                document.getElementById('collisionCount').textContent = this.collisionCount;
+                
+                const totalVelocity = this.elements.reduce((sum, el) => {
+                    return sum + Math.sqrt(el.physics.vx * el.physics.vx + el.physics.vy * el.physics.vy);
+                }, 0);
+                
+                const avgVelocity = this.elements.length > 0 ? (totalVelocity / this.elements.length).toFixed(1) : 0;
+                document.getElementById('avgVelocity').textContent = avgVelocity;
+            }
+
+            updateElementCount() {
+                document.getElementById('elementCount').textContent = this.elements.length;
+            }
+
+            startPhysicsLoop() {
+                const loop = () => {
+                    this.updatePhysics();
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+
+            reset() {
+                this.elements.forEach(el => {
+                    if (el.element.parentNode) {
+                        el.element.parentNode.removeChild(el.element);
+                    }
+                });
+                this.elements = [];
+                this.collisionCount = 0;
+                this.createInitialElements();
+            }
+
+            toggleTrails() {
+                this.showTrails = !this.showTrails;
+            }
+
+            addRandomElement() {
+                const types = ['card', 'button', 'circular-button', 'notification', 'slider-element'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const x = Math.random() * (window.innerWidth - 300);
+                const y = Math.random() * (window.innerHeight - 200);
+                
+                let content = '';
+                switch(type) {
+                    case 'card':
+                        content = '<h3>Dynamic Element</h3><p>This element was created dynamically with realistic physics.</p>';
+                        break;
+                    case 'button':
+                        content = 'New Action';
+                        break;
+                    case 'circular-button':
+                        const icons = ['🌟', '⚡', '🔥', '💫', '🚀', '⭐'];
+                        content = icons[Math.floor(Math.random() * icons.length)];
+                        break;
+                    case 'notification':
+                        content = '<div class="title">New Message</div><div>A new floating element has joined the microgravity environment.</div>';
+                        break;
+                    case 'slider-element':
+                        content = '<span>Control</span><input type="range" class="mini-slider" min="0" max="100" value="50">';
+                        break;
+                }
+                
+                this.createElement(type, x, y, content);
+            }
+        }
+
+        // Global functions for buttons
+        function addRandomElement() {
+            simulator.addRandomElement();
+        }
+
+        function resetSimulation() {
+            simulator.reset();
+        }
+
+        function toggleTrails() {
+            simulator.toggleTrails();
+        }
+
+        // Initialize the simulator
+        const simulator = new MicrogravitySimulator();
+
+        // Add some visual flair on load
+        setTimeout(() => {
+            simulator.applyRandomForces();
+        }, 1000);
+    </script>
+</body>
+</html>
