@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microgravity UI Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 30%, #0f0f23 70%, #000000 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Starfield background */
+        .starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: twinkle 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: linear-gradient(135deg, rgba(13, 13, 35, 0.95), rgba(30, 30, 60, 0.9));
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            border-radius: 20px;
+            padding: 25px;
+            color: white;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            transform: translateZ(0);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            animation: floatIn 1s ease-out;
+        }
+
+        .control-panel:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                0 0 0 1px rgba(100, 255, 218, 0.2);
+        }
+
+        @keyframes floatIn {
+            0% { 
+                opacity: 0; 
+                transform: translateY(-30px) scale(0.9); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        .control-panel h3 {
+            margin-bottom: 20px;
+            color: #64ffda;
+            font-size: 20px;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(100, 255, 218, 0.5);
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+
+        .control-panel h3:after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #64ffda, transparent);
+            border-radius: 1px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            position: relative;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .control-group:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+            border-color: rgba(100, 255, 218, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #e0e0e0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+        }
+
+        .slider {
+            width: 160px;
+            height: 6px;
+            background: linear-gradient(90deg, #1a1a2e, #2d2d4a);
+            outline: none;
+            border-radius: 20px;
+            -webkit-appearance: none;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider:hover {
+            background: linear-gradient(90deg, #2d2d4a, #404070);
+            box-shadow: 
+                inset 0 2px 4px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(100, 255, 218, 0.2);
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #64ffda, #4ecdc4);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 
+                0 4px 12px rgba(100, 255, 218, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: linear-gradient(135deg, #4ecdc4, #64ffda);
+            box-shadow: 
+                0 6px 20px rgba(100, 255, 218, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        .slider::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+        }
+
+        .button-control {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            margin: 8px 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 15px rgba(102, 126, 234, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .button-control:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .button-control:hover {
+            transform: translateY(-3px) scale(1.05);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            box-shadow: 
+                0 8px 25px rgba(102, 126, 234, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .button-control:hover:before {
+            left: 100%;
+        }
+
+        .button-control:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .floating-element {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            border-radius: 20px;
+            backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-element:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .floating-element:hover {
+            transform: scale(1.08) translateY(-5px);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 40px rgba(100, 255, 218, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border-color: rgba(100, 255, 218, 0.3);
+        }
+
+        .floating-element:active {
+            cursor: grabbing;
+            transform: scale(1.02);
+        }
+
+        .floating-element.dragging {
+            z-index: 100;
+            transform: scale(1.15) rotate(8deg);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.7),
+                0 0 60px rgba(100, 255, 218, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border-color: rgba(100, 255, 218, 0.5);
+            filter: brightness(1.2);
+        }
+
+        .card {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.12) 0%, 
+                rgba(255, 255, 255, 0.08) 50%,
+                rgba(255, 255, 255, 0.05) 100%);
+            padding: 30px;
+            width: 300px;
+            min-height: 180px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, 
+                rgba(100, 255, 218, 0.1) 0%, 
+                transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover:before {
+            opacity: 1;
+        }
+
+        .card h3 {
+            margin-bottom: 18px;
+            color: #64ffda;
+            font-size: 22px;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(100, 255, 218, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card p {
+            line-height: 1.7;
+            opacity: 0.95;
+            font-size: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            min-width: 160px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 8px 25px rgba(102, 126, 234, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .button:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 
+                0 15px 35px rgba(102, 126, 234, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .button:hover:before {
+            left: 100%;
+        }
+
+        .button:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .circular-button {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 10px 30px rgba(255, 107, 107, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .circular-button:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            transform: scale(0);
+            transition: transform 0.5s ease;
+        }
+
+        .circular-button:hover {
+            background: linear-gradient(135deg, #ee5a52 0%, #ff6b6b 100%);
+            transform: scale(1.15) rotate(10deg);
+            box-shadow: 
+                0 15px 40px rgba(255, 107, 107, 0.6),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .circular-button:hover:before {
+            transform: scale(1);
+        }
+
+        .circular-button:active {
+            transform: scale(1.08) rotate(5deg);
+        }
+
+        .notification {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.2) 0%, rgba(100, 255, 218, 0.1) 100%);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            padding: 20px;
+            width: 300px;
+            color: white;
+        }
+
+        .notification .title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #64ffda;
+        }
+
+        .slider-element {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            padding: 20px;
+            width: 250px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .mini-slider {
+            flex: 1;
+            height: 5px;
+            background: #333;
+            border-radius: 5px;
+            -webkit-appearance: none;
+            outline: none;
+        }
+
+        .mini-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #64ffda;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .physics-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(13, 13, 35, 0.95), rgba(30, 30, 60, 0.9));
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            border-radius: 20px;
+            padding: 20px;
+            color: white;
+            font-size: 13px;
+            max-width: 220px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            animation: slideInRight 1s ease-out 0.5s both;
+        }
+
+        .physics-info:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                0 0 0 1px rgba(100, 255, 218, 0.2);
+        }
+
+        .physics-info div {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .physics-info div:last-child {
+            margin-bottom: 0;
+        }
+
+        .physics-info strong {
+            color: #64ffda;
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        }
+
+        .physics-info span {
+            color: #ffffff;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        @keyframes slideInRight {
+            0% { 
+                opacity: 0; 
+                transform: translateX(30px) scale(0.9); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateX(0) scale(1); 
+            }
+        }
+
+        .trail {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, rgba(100, 255, 218, 0.8) 0%, rgba(100, 255, 218, 0.4) 50%, transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fadeTrail 1.5s ease-out forwards;
+            box-shadow: 0 0 8px rgba(100, 255, 218, 0.6);
+        }
+
+        @keyframes fadeTrail {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.1);
+            }
+        }
+
+        .collision-effect {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #64ffda;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: collisionPulse 0.8s ease-out forwards;
+            box-shadow: 
+                0 0 20px rgba(100, 255, 218, 0.8),
+                inset 0 0 10px rgba(100, 255, 218, 0.4);
+        }
+
+        @keyframes collisionPulse {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+                border-width: 3px;
+            }
+            50% {
+                transform: scale(2) rotate(180deg);
+                opacity: 0.8;
+                border-width: 2px;
+            }
+            100% {
+                transform: scale(4) rotate(360deg);
+                opacity: 0;
+                border-width: 1px;
+            }
+        }
+
+        .floating-element.bouncing {
+            animation: bounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes bounce {
+            0%, 100% { 
+                transform: scale(1) rotate(0deg); 
+                filter: brightness(1);
+            }
+            25% { 
+                transform: scale(1.15) rotate(5deg); 
+                filter: brightness(1.3);
+            }
+            50% { 
+                transform: scale(1.2) rotate(-3deg); 
+                filter: brightness(1.4);
+            }
+            75% { 
+                transform: scale(1.1) rotate(2deg); 
+                filter: brightness(1.2);
+            }
+        }
+
+        /* Enhanced notification styling */
+        .notification {
+            background: linear-gradient(135deg, 
+                rgba(100, 255, 218, 0.15) 0%, 
+                rgba(100, 255, 218, 0.08) 50%,
+                rgba(100, 255, 218, 0.05) 100%);
+            border: 2px solid rgba(100, 255, 218, 0.3);
+            padding: 25px;
+            width: 320px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notification:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #64ffda, transparent);
+            animation: notificationScan 3s ease-in-out infinite;
+        }
+
+        @keyframes notificationScan {
+            0%, 100% { left: -100%; }
+            50% { left: 100%; }
+        }
+
+        .notification .title {
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #64ffda;
+            font-size: 16px;
+            text-shadow: 0 0 15px rgba(100, 255, 218, 0.4);
+            position: relative;
+            z-index: 1;
+        }
+
+        .notification div:last-child {
+            position: relative;
+            z-index: 1;
+            line-height: 1.6;
+        }
+
+        /* Enhanced slider element */
+        .slider-element {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.12) 0%, 
+                rgba(255, 255, 255, 0.08) 50%,
+                rgba(255, 255, 255, 0.05) 100%);
+            padding: 25px;
+            width: 270px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: white;
+            position: relative;
+        }
+
+        .slider-element span {
+            font-weight: 600;
+            color: #e0e0e0;
+            min-width: 60px;
+            font-size: 14px;
+        }
+
+        .mini-slider {
+            flex: 1;
+            height: 6px;
+            background: linear-gradient(90deg, #1a1a2e, #2d2d4a);
+            border-radius: 20px;
+            -webkit-appearance: none;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .mini-slider:hover {
+            background: linear-gradient(90deg, #2d2d4a, #404070);
+            box-shadow: 
+                inset 0 2px 4px rgba(0, 0, 0, 0.4),
+                0 0 15px rgba(100, 255, 218, 0.2);
+        }
+
+        .mini-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #64ffda, #4ecdc4);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 
+                0 3px 8px rgba(100, 255, 218, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .mini-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 
+                0 4px 12px rgba(100, 255, 218, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        /* Pulse animation for active elements */
+        @keyframes elementPulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 12px 40px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+            50% { 
+                box-shadow: 
+                    0 12px 40px rgba(0, 0, 0, 0.4),
+                    0 0 30px rgba(100, 255, 218, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .floating-element.active {
+            animation: elementPulse 2s ease-in-out infinite;
+        }
+
+        /* Loading animation for new elements */
+        @keyframes elementSpawn {
+            0% {
+                opacity: 0;
+                transform: scale(0) rotate(180deg);
+                filter: blur(10px);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.2) rotate(90deg);
+                filter: blur(2px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+                filter: blur(0px);
+            }
+        }
+
+        .floating-element.spawning {
+            animation: elementSpawn 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* Improved starfield with multiple layers */
+        .starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(100,255,218,0.4), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(100,255,218,0.3), transparent),
+                radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 200px 60px, rgba(100,255,218,0.5), transparent);
+            background-repeat: repeat;
+            background-size: 250px 120px;
+            animation: twinkle 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { 
+                opacity: 0.6; 
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.9;
+                transform: scale(1.02);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+        }
+        .floating-element.bouncing {
+            animation: bounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes bounce {
+            0%, 100% { 
+                transform: scale(1) rotate(0deg); 
+                filter: brightness(1);
+            }
+            25% { 
+                transform: scale(1.15) rotate(5deg); 
+                filter: brightness(1.3);
+            }
+            50% { 
+                transform: scale(1.2) rotate(-3deg); 
+                filter: brightness(1.4);
+            }
+            75% { 
+                transform: scale(1.1) rotate(2deg); 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="starfield"></div>
+    
+    <div class="control-panel">
+        <h3>🚀 Microgravity Controls</h3>
+        
+        <div class="control-group">
+            <label>Gravity Strength</label>
+            <input type="range" class="slider" id="gravitySlider" min="0" max="2" step="0.1" value="0.3">
+        </div>
+        
+        <div class="control-group">
+            <label>Air Resistance</label>
+            <input type="range" class="slider" id="frictionSlider" min="0.9" max="1" step="0.01" value="0.995">
+        </div>
+        
+        <div class="control-group">
+            <label>Bounce Factor</label>
+            <input type="range" class="slider" id="bounceSlider" min="0.3" max="0.9" step="0.1" value="0.7">
+        </div>
+        
+        <button class="button-control" onclick="addRandomElement()">Add Element</button>
+        <button class="button-control" onclick="resetSimulation()">Reset</button>
+        <button class="button-control" onclick="toggleTrails()">Toggle Trails</button>
+    </div>
+
+    <div class="physics-info">
+        <div><strong>Active Elements:</strong> <span id="elementCount">0</span></div>
+        <div><strong>Total Collisions:</strong> <span id="collisionCount">0</span></div>
+        <div><strong>Average Velocity:</strong> <span id="avgVelocity">0</span> px/s</div>
+    </div>
+
+    <script>
+        class MicrogravitySimulator {
+            constructor() {
+                this.elements = [];
+                this.gravity = 0.3;
+                this.friction = 0.995;
+                this.bounceFactor = 0.7;
+                this.collisionCount = 0;
+                this.showTrails = true;
+                this.isDragging = false;
+                this.dragElement = null;
+                this.dragOffset = { x: 0, y: 0 };
+                this.lastMousePos = { x: 0, y: 0 };
+                this.mouseVelocity = { x: 0, y: 0 };
+                
+                this.initializeControls();
+                this.createInitialElements();
+                this.startPhysicsLoop();
+                this.bindEvents();
+            }
+
+            initializeControls() {
+                document.getElementById('gravitySlider').addEventListener('input', (e) => {
+                    this.gravity = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('frictionSlider').addEventListener('input', (e) => {
+                    this.friction = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('bounceSlider').addEventListener('input', (e) => {
+                    this.bounceFactor = parseFloat(e.target.value);
+                });
+            }
+
+            createInitialElements() {
+                // Create diverse initial elements
+                this.createElement('card', 200, 150, `
+                    <h3>Space Navigation</h3>
+                    <p>Navigate through zero gravity with intuitive controls and realistic physics simulation.</p>
+                `);
+                
+                this.createElement('button', 600, 200, 'Launch Mission');
+                this.createElement('circular-button', 800, 300, '🚀');
+                
+                this.createElement('notification', 300, 400, `
+                    <div class="title">System Alert</div>
+                    <div>Microgravity environment active. All UI elements are now floating freely.</div>
+                `);
+                
+                this.createElement('card', 700, 500, `
+                    <h3>Physics Engine</h3>
+                    <p>Advanced collision detection, momentum conservation, and realistic orbital mechanics.</p>
+                `);
+                
+                this.createElement('slider-element', 150, 600, `
+                    <span>Volume</span>
+                    <input type="range" class="mini-slider" min="0" max="100" value="75">
+                `);
+                
+                this.createElement('button', 900, 150, 'Data Analysis');
+                this.createElement('circular-button', 400, 250, '⚙️');
+            }
+
+            createElement(type, x, y, content) {
+                const element = document.createElement('div');
+                element.className = `floating-element ${type} spawning`;
+                element.innerHTML = content;
+                element.style.left = x + 'px';
+                element.style.top = y + 'px';
+                
+                const physics = {
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    mass: type === 'card' ? 2 : 1,
+                    width: 0,
+                    height: 0,
+                    rotation: 0,
+                    angularVelocity: (Math.random() - 0.5) * 0.02
+                };
+                
+                document.body.appendChild(element);
+                
+                // Remove spawning animation after completion
+                setTimeout(() => {
+                    element.classList.remove('spawning');
+                }, 800);
+                
+                // Get actual dimensions after adding to DOM
+                setTimeout(() => {
+                    const rect = element.getBoundingClientRect();
+                    physics.width = rect.width;
+                    physics.height = rect.height;
+                }, 0);
+                
+                this.elements.push({ element, physics, type });
+                this.updateElementCount();
+            }
+
+            bindEvents() {
+                document.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+            }
+
+            handleMouseDown(e) {
+                const clickedElement = e.target.closest('.floating-element');
+                if (clickedElement) {
+                    this.isDragging = true;
+                    this.dragElement = this.elements.find(el => el.element === clickedElement);
+                    
+                    if (this.dragElement) {
+                        const rect = clickedElement.getBoundingClientRect();
+                        this.dragOffset.x = e.clientX - rect.left;
+                        this.dragOffset.y = e.clientY - rect.top;
+                        
+                        clickedElement.classList.add('dragging');
+                        this.lastMousePos = { x: e.clientX, y: e.clientY };
+                        this.mouseVelocity = { x: 0, y: 0 };
+                    }
+                }
+            }
+
+            handleMouseMove(e) {
+                if (this.isDragging && this.dragElement) {
+                    const deltaX = e.clientX - this.lastMousePos.x;
+                    const deltaY = e.clientY - this.lastMousePos.y;
+                    
+                    this.mouseVelocity.x = deltaX * 0.5;
+                    this.mouseVelocity.y = deltaY * 0.5;
+                    
+                    this.dragElement.physics.x = e.clientX - this.dragOffset.x;
+                    this.dragElement.physics.y = e.clientY - this.dragOffset.y;
+                    
+                    this.updateElementPosition(this.dragElement);
+                    
+                    if (this.showTrails) {
+                        this.createTrail(e.clientX, e.clientY);
+                    }
+                    
+                    this.lastMousePos = { x: e.clientX, y: e.clientY };
+                }
+            }
+
+            handleMouseUp(e) {
+                if (this.isDragging && this.dragElement) {
+                    this.dragElement.element.classList.remove('dragging');
+                    
+                    // Apply release velocity
+                    this.dragElement.physics.vx = this.mouseVelocity.x * 0.3;
+                    this.dragElement.physics.vy = this.mouseVelocity.y * 0.3;
+                    this.dragElement.physics.angularVelocity = (Math.random() - 0.5) * 0.1;
+                    
+                    this.isDragging = false;
+                    this.dragElement = null;
+                }
+            }
+
+            handleKeyDown(e) {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        this.applyRandomForces();
+                        break;
+                    case 'r':
+                        this.resetSimulation();
+                        break;
+                    case 'a':
+                        addRandomElement();
+                        break;
+                }
+            }
+
+            applyRandomForces() {
+                this.elements.forEach(el => {
+                    el.physics.vx += (Math.random() - 0.5) * 10;
+                    el.physics.vy += (Math.random() - 0.5) * 10;
+                    el.physics.angularVelocity += (Math.random() - 0.5) * 0.2;
+                });
+            }
+
+            updatePhysics() {
+                this.elements.forEach(el => {
+                    if (this.isDragging && el === this.dragElement) return;
+                    
+                    // Apply gravity
+                    el.physics.vy += this.gravity;
+                    
+                    // Apply friction
+                    el.physics.vx *= this.friction;
+                    el.physics.vy *= this.friction;
+                    el.physics.angularVelocity *= this.friction;
+                    
+                    // Update position
+                    el.physics.x += el.physics.vx;
+                    el.physics.y += el.physics.vy;
+                    el.physics.rotation += el.physics.angularVelocity;
+                    
+                    // Boundary collisions
+                    this.handleBoundaryCollisions(el);
+                    
+                    this.updateElementPosition(el);
+                    
+                    // Create trails
+                    if (this.showTrails && (Math.abs(el.physics.vx) > 1 || Math.abs(el.physics.vy) > 1)) {
+                        this.createTrail(el.physics.x + el.physics.width/2, el.physics.y + el.physics.height/2);
+                    }
+                });
+                
+                // Check element collisions
+                this.checkCollisions();
+                this.updateStats();
+            }
+
+            handleBoundaryCollisions(el) {
+                const margin = 50;
+                
+                if (el.physics.x < 0) {
+                    el.physics.x = 0;
+                    el.physics.vx = Math.abs(el.physics.vx) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x, el.physics.y);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+                
+                if (el.physics.x + el.physics.width > window.innerWidth) {
+                    el.physics.x = window.innerWidth - el.physics.width;
+                    el.physics.vx = -Math.abs(el.physics.vx) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x + el.physics.width, el.physics.y);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+                
+                if (el.physics.y < 0) {
+                    el.physics.y = 0;
+                    el.physics.vy = Math.abs(el.physics.vy) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x, el.physics.y);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+                
+                if (el.physics.y + el.physics.height > window.innerHeight - margin) {
+                    el.physics.y = window.innerHeight - el.physics.height - margin;
+                    el.physics.vy = -Math.abs(el.physics.vy) * this.bounceFactor;
+                    this.createCollisionEffect(el.physics.x, el.physics.y + el.physics.height);
+                    el.element.classList.add('bouncing');
+                    setTimeout(() => el.element.classList.remove('bouncing'), 300);
+                }
+            }
+
+            checkCollisions() {
+                for (let i = 0; i < this.elements.length; i++) {
+                    for (let j = i + 1; j < this.elements.length; j++) {
+                        const el1 = this.elements[i];
+                        const el2 = this.elements[j];
+                        
+                        if (this.isColliding(el1, el2)) {
+                            this.resolveCollision(el1, el2);
+                            this.collisionCount++;
+                            
+                            // Create collision effect
+                            const centerX = (el1.physics.x + el2.physics.x) / 2;
+                            const centerY = (el1.physics.y + el2.physics.y) / 2;
+                            this.createCollisionEffect(centerX, centerY);
+                            
+                            el1.element.classList.add('bouncing');
+                            el2.element.classList.add('bouncing');
+                            setTimeout(() => {
+                                el1.element.classList.remove('bouncing');
+                                el2.element.classList.remove('bouncing');
+                            }, 300);
+                        }
+                    }
+                }
+            }
+
+            isColliding(el1, el2) {
+                return !(el1.physics.x + el1.physics.width < el2.physics.x ||
+                        el2.physics.x + el2.physics.width < el1.physics.x ||
+                        el1.physics.y + el1.physics.height < el2.physics.y ||
+                        el2.physics.y + el2.physics.height < el1.physics.y);
+            }
+
+            resolveCollision(el1, el2) {
+                // Simple elastic collision
+                const tempVx = el1.physics.vx;
+                const tempVy = el1.physics.vy;
+                
+                el1.physics.vx = el2.physics.vx * this.bounceFactor;
+                el1.physics.vy = el2.physics.vy * this.bounceFactor;
+                el2.physics.vx = tempVx * this.bounceFactor;
+                el2.physics.vy = tempVy * this.bounceFactor;
+                
+                // Separate overlapping elements
+                const overlapX = (el1.physics.x + el1.physics.width) - el2.physics.x;
+                const overlapY = (el1.physics.y + el1.physics.height) - el2.physics.y;
+                
+                if (Math.abs(overlapX) < Math.abs(overlapY)) {
+                    el1.physics.x -= overlapX / 2;
+                    el2.physics.x += overlapX / 2;
+                } else {
+                    el1.physics.y -= overlapY / 2;
+                    el2.physics.y += overlapY / 2;
+                }
+            }
+
+            updateElementPosition(el) {
+                el.element.style.left = el.physics.x + 'px';
+                el.element.style.top = el.physics.y + 'px';
+                el.element.style.transform = `rotate(${el.physics.rotation}rad)`;
+            }
+
+            createTrail(x, y) {
+                const trail = document.createElement('div');
+                trail.className = 'trail';
+                trail.style.left = x + 'px';
+                trail.style.top = y + 'px';
+                document.body.appendChild(trail);
+                
+                setTimeout(() => {
+                    if (trail.parentNode) {
+                        trail.parentNode.removeChild(trail);
+                    }
+                }, 1000);
+            }
+
+            createCollisionEffect(x, y) {
+                const effect = document.createElement('div');
+                effect.className = 'collision-effect';
+                effect.style.left = (x - 10) + 'px';
+                effect.style.top = (y - 10) + 'px';
+                document.body.appendChild(effect);
+                
+                setTimeout(() => {
+                    if (effect.parentNode) {
+                        effect.parentNode.removeChild(effect);
+                    }
+                }, 500);
+            }
+
+            updateStats() {
+                document.getElementById('elementCount').textContent = this.elements.length;
+                document.getElementById('collisionCount').textContent = this.collisionCount;
+                
+                const totalVelocity = this.elements.reduce((sum, el) => {
+                    return sum + Math.sqrt(el.physics.vx * el.physics.vx + el.physics.vy * el.physics.vy);
+                }, 0);
+                
+                const avgVelocity = this.elements.length > 0 ? (totalVelocity / this.elements.length).toFixed(1) : 0;
+                document.getElementById('avgVelocity').textContent = avgVelocity;
+            }
+
+            updateElementCount() {
+                document.getElementById('elementCount').textContent = this.elements.length;
+            }
+
+            startPhysicsLoop() {
+                const loop = () => {
+                    this.updatePhysics();
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+
+            reset() {
+                this.elements.forEach(el => {
+                    if (el.element.parentNode) {
+                        el.element.parentNode.removeChild(el.element);
+                    }
+                });
+                this.elements = [];
+                this.collisionCount = 0;
+                this.createInitialElements();
+            }
+
+            toggleTrails() {
+                this.showTrails = !this.showTrails;
+            }
+
+            addRandomElement() {
+                const types = ['card', 'button', 'circular-button', 'notification', 'slider-element'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const x = Math.random() * (window.innerWidth - 300);
+                const y = Math.random() * (window.innerHeight - 200);
+                
+                let content = '';
+                switch(type) {
+                    case 'card':
+                        content = '<h3>Dynamic Element</h3><p>This element was created dynamically with realistic physics.</p>';
+                        break;
+                    case 'button':
+                        content = 'New Action';
+                        break;
+                    case 'circular-button':
+                        const icons = ['🌟', '⚡', '🔥', '💫', '🚀', '⭐'];
+                        content = icons[Math.floor(Math.random() * icons.length)];
+                        break;
+                    case 'notification':
+                        content = '<div class="title">New Message</div><div>A new floating element has joined the microgravity environment.</div>';
+                        break;
+                    case 'slider-element':
+                        content = '<span>Control</span><input type="range" class="mini-slider" min="0" max="100" value="50">';
+                        break;
+                }
+                
+                this.createElement(type, x, y, content);
+            }
+        }
+
+        // Global functions for buttons
+        function addRandomElement() {
+            simulator.addRandomElement();
+        }
+
+        function resetSimulation() {
+            simulator.reset();
+        }
+
+        function toggleTrails() {
+            simulator.toggleTrails();
+        }
+
+        // Initialize the simulator
+        const simulator = new MicrogravitySimulator();
+
+        // Add some visual flair on load
+        setTimeout(() => {
+            simulator.applyRandomForces();
+        }, 1000);
+    </script>
+</body>
+</html>
