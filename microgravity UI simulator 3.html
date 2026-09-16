@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microgravity UI Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+            cursor: none;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkleStars 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes sparkleStars {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-200px); }
+        }
+
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            font-size: 14px;
+            min-width: 280px;
+        }
+
+        .control-panel h3 {
+            margin-bottom: 15px;
+            color: #007AFF;
+            font-weight: 600;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #007AFF;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #007AFF, #0056CC);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .floating-element {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .floating-element:hover {
+            transform: scale(1.02);
+            box-shadow: 
+                0 12px 48px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .floating-element.dragging {
+            cursor: grabbing;
+            transform: scale(1.05) rotate(2deg);
+            z-index: 1000;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 2px rgba(0, 122, 255, 0.3);
+        }
+
+        .ui-card {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.1) 0%, 
+                rgba(255, 255, 255, 0.05) 100%);
+            padding: 24px;
+            width: 280px;
+            min-height: 160px;
+        }
+
+        .ui-button {
+            background: linear-gradient(135deg, #007AFF, #0056CC);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            min-width: 140px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .ui-widget {
+            background: linear-gradient(135deg, 
+                rgba(52, 199, 89, 0.2) 0%, 
+                rgba(52, 199, 89, 0.1) 100%);
+            padding: 20px;
+            width: 200px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #34C759;
+        }
+
+        .ui-panel {
+            background: linear-gradient(135deg, 
+                rgba(255, 149, 0, 0.2) 0%, 
+                rgba(255, 149, 0, 0.1) 100%);
+            padding: 20px;
+            width: 240px;
+            height: 180px;
+            color: #FF9500;
+        }
+
+        .ui-toggle {
+            background: linear-gradient(135deg, 
+                rgba(255, 45, 85, 0.2) 0%, 
+                rgba(255, 45, 85, 0.1) 100%);
+            padding: 16px;
+            width: 100px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FF2D55;
+            font-weight: 600;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .card-content {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .widget-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .widget-label {
+            font-size: 12px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #007AFF 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transition: transform 0.1s ease;
+            mix-blend-mode: screen;
+        }
+
+        .impact-ripple {
+            position: absolute;
+            border: 2px solid #007AFF;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: rippleEffect 0.6s ease-out forwards;
+        }
+
+        @keyframes rippleEffect {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 100px;
+                height: 100px;
+                opacity: 0;
+            }
+        }
+
+        .collision-flash {
+            animation: flashEffect 0.3s ease-out;
+        }
+
+        @keyframes flashEffect {
+            0% { background-color: rgba(255, 255, 255, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        .status-display {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .performance-meter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .meter-bar {
+            width: 60px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34C759, #007AFF);
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+                padding: 15px;
+            }
+            
+            .status-display {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                font-size: 11px;
+            }
+            
+            .floating-element {
+                transform: scale(0.9);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="custom-cursor" id="cursor"></div>
+    
+    <div class="control-panel">
+        <h3>🚀 Microgravity Simulator</h3>
+        
+        <div class="control-group">
+            <label for="gravity">Gravity Field Strength</label>
+            <input type="range" id="gravity" class="slider" min="0" max="0.5" step="0.01" value="0.1">
+        </div>
+        
+        <div class="control-group">
+            <label for="friction">Air Resistance</label>
+            <input type="range" id="friction" class="slider" min="0.95" max="0.999" step="0.001" value="0.98">
+        </div>
+        
+        <div class="control-group">
+            <label for="bounce">Surface Elasticity</label>
+            <input type="range" id="bounce" class="slider" min="0.3" max="0.95" step="0.05" value="0.7">
+        </div>
+        
+        <div class="button-group">
+            <button class="control-btn" onclick="addRandomElement()">Add Element</button>
+            <button class="control-btn" onclick="applyImpulse()">Solar Wind</button>
+            <button class="control-btn" onclick="resetSimulation()">Reset Orbit</button>
+            <button class="control-btn" onclick="toggleGravityWell()">Gravity Well</button>
+        </div>
+    </div>
+
+    <div class="status-display">
+        <div class="performance-meter">
+            <span>Physics FPS:</span>
+            <div class="meter-bar">
+                <div class="meter-fill" id="fpsMeter"></div>
+            </div>
+            <span id="fpsValue">60</span>
+        </div>
+        <div>Active Elements: <span id="elementCount">6</span></div>
+        <div>Kinetic Energy: <span id="kineticEnergy">0.0</span></div>
+        <div>Simulation Time: <span id="simTime">00:00</span></div>
+    </div>
+
+    <script>
+        class MicrogravitySimulator {
+            constructor() {
+                this.elements = [];
+                this.physics = {
+                    gravity: 0.1,
+                    friction: 0.98,
+                    bounce: 0.7,
+                    gravityWell: null
+                };
+                this.mouse = { x: 0, y: 0, isDown: false };
+                this.dragTarget = null;
+                this.dragOffset = { x: 0, y: 0 };
+                this.startTime = Date.now();
+                this.lastFrameTime = 0;
+                this.frameCount = 0;
+                this.fps = 60;
+                
+                this.setupEventListeners();
+                this.createInitialElements();
+                this.animate();
+                this.updateUI();
+            }
+
+            setupEventListeners() {
+                // Mouse/Touch events
+                document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+                document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+                document.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+                document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+
+                // Control panel events
+                document.getElementById('gravity').addEventListener('input', (e) => {
+                    this.physics.gravity = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('friction').addEventListener('input', (e) => {
+                    this.physics.friction = parseFloat(e.target.value);
+                });
+                
+                document.getElementById('bounce').addEventListener('input', (e) => {
+                    this.physics.bounce = parseFloat(e.target.value);
+                });
+
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case ' ':
+                            e.preventDefault();
+                            this.applyImpulse();
+                            break;
+                        case 'r':
+                            this.resetSimulation();
+                            break;
+                        case 'g':
+                            this.toggleGravityWell();
+                            break;
+                    }
+                });
+            }
+
+            createInitialElements() {
+                const elements = [
+                    { type: 'card', title: 'Mission Control', content: 'Monitoring all systems in real-time. All green across the board.' },
+                    { type: 'button', text: '🚀 Launch Sequence' },
+                    { type: 'widget', value: '99.2%', label: 'Orbital Stability' },
+                    { type: 'panel', content: 'Life Support Systems Online' },
+                    { type: 'button', text: '📡 Communications' },
+                    { type: 'toggle', text: 'ON' }
+                ];
+
+                elements.forEach((config, index) => {
+                    setTimeout(() => this.createElement(config), index * 200);
+                });
+            }
+
+            createElement(config) {
+                const element = document.createElement('div');
+                element.className = `floating-element ui-${config.type}`;
+                
+                // Set initial position (avoiding control panel area)
+                const x = Math.random() * (window.innerWidth - 300) + 150;
+                const y = Math.random() * (window.innerHeight - 200) + 100;
+                
+                element.style.left = x + 'px';
+                element.style.top = y + 'px';
+
+                // Create content based on type
+                switch(config.type) {
+                    case 'card':
+                        element.innerHTML = `
+                            <div class="card-title">${config.title}</div>
+                            <div class="card-content">${config.content}</div>
+                        `;
+                        break;
+                    case 'button':
+                        element.innerHTML = config.text;
+                        element.addEventListener('click', () => this.handleElementClick(element));
+                        break;
+                    case 'widget':
+                        element.innerHTML = `
+                            <div class="widget-value">${config.value}</div>
+                            <div class="widget-label">${config.label}</div>
+                        `;
+                        break;
+                    case 'panel':
+                        element.innerHTML = `
+                            <div class="card-title">System Status</div>
+                            <div class="card-content">${config.content}</div>
+                        `;
+                        break;
+                    case 'toggle':
+                        element.innerHTML = config.text;
+                        element.addEventListener('click', () => {
+                            element.innerHTML = element.innerHTML === 'ON' ? 'OFF' : 'ON';
+                            element.style.background = element.innerHTML === 'ON' ? 
+                                'linear-gradient(135deg, rgba(52, 199, 89, 0.2) 0%, rgba(52, 199, 89, 0.1) 100%)' :
+                                'linear-gradient(135deg, rgba(255, 45, 85, 0.2) 0%, rgba(255, 45, 85, 0.1) 100%)';
+                        });
+                        break;
+                }
+
+                document.body.appendChild(element);
+
+                const physicsObject = {
+                    element: element,
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    mass: 1 + Math.random(),
+                    rotation: 0,
+                    rotationSpeed: (Math.random() - 0.5) * 0.02
+                };
+
+                this.elements.push(physicsObject);
+                return physicsObject;
+            }
+
+            handleMouseMove(e) {
+                this.mouse.x = e.clientX;
+                this.mouse.y = e.clientY;
+                
+                // Update cursor
+                const cursor = document.getElementById('cursor');
+                cursor.style.left = (e.clientX - 10) + 'px';
+                cursor.style.top = (e.clientY - 10) + 'px';
+
+                if (this.dragTarget) {
+                    const rect = this.dragTarget.element.getBoundingClientRect();
+                    this.dragTarget.x = e.clientX - this.dragOffset.x;
+                    this.dragTarget.y = e.clientY - this.dragOffset.y;
+                    
+                    // Add momentum based on mouse movement
+                    this.dragTarget.vx = (e.clientX - this.dragOffset.x - this.dragTarget.x) * 0.3;
+                    this.dragTarget.vy = (e.clientY - this.dragOffset.y - this.dragTarget.y) * 0.3;
+                }
+            }
+
+            handleMouseDown(e) {
+                this.mouse.isDown = true;
+                const target = e.target.closest('.floating-element');
+                if (target) {
+                    e.preventDefault();
+                    this.startDrag(target, e.clientX, e.clientY);
+                }
+            }
+
+            handleMouseUp(e) {
+                this.mouse.isDown = false;
+                if (this.dragTarget) {
+                    this.endDrag();
+                }
+            }
+
+            handleTouchStart(e) {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const floatingElement = target?.closest('.floating-element');
+                    if (floatingElement) {
+                        e.preventDefault();
+                        this.startDrag(floatingElement, touch.clientX, touch.clientY);
+                    }
+                }
+            }
+
+            handleTouchMove(e) {
+                if (e.touches.length === 1 && this.dragTarget) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.dragTarget.x = touch.clientX - this.dragOffset.x;
+                    this.dragTarget.y = touch.clientY - this.dragOffset.y;
+                    
+                    this.dragTarget.vx = (touch.clientX - this.dragOffset.x - this.dragTarget.x) * 0.3;
+                    this.dragTarget.vy = (touch.clientY - this.dragOffset.y - this.dragTarget.y) * 0.3;
+                }
+            }
+
+            handleTouchEnd(e) {
+                if (this.dragTarget) {
+                    this.endDrag();
+                }
+            }
+
+            startDrag(element, x, y) {
+                const obj = this.elements.find(el => el.element === element);
+                if (obj) {
+                    this.dragTarget = obj;
+                    const rect = element.getBoundingClientRect();
+                    this.dragOffset.x = x - rect.left;
+                    this.dragOffset.y = y - rect.top;
+                    element.classList.add('dragging');
+                }
+            }
+
+            endDrag() {
+                if (this.dragTarget) {
+                    this.dragTarget.element.classList.remove('dragging');
+                    // Apply release velocity
+                    this.dragTarget.vx *= 1.5;
+                    this.dragTarget.vy *= 1.5;
+                    this.dragTarget = null;
+                }
+            }
+
+            handleElementClick(element) {
+                // Create ripple effect
+                const rect = element.getBoundingClientRect();
+                const ripple = document.createElement('div');
+                ripple.className = 'impact-ripple';
+                ripple.style.left = (rect.left + rect.width / 2 - 25) + 'px';
+                ripple.style.top = (rect.top + rect.height / 2 - 25) + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+
+                // Add impulse to nearby elements
+                const clickedObj = this.elements.find(el => el.element === element);
+                if (clickedObj) {
+                    this.elements.forEach(obj => {
+                        if (obj !== clickedObj) {
+                            const dx = obj.x - clickedObj.x;
+                            const dy = obj.y - clickedObj.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance < 200) {
+                                const force = 50 / (distance + 1);
+                                obj.vx += (dx / distance) * force;
+                                obj.vy += (dy / distance) * force;
+                            }
+                        }
+                    });
+                }
+            }
+
+            updatePhysics() {
+                this.elements.forEach(obj => {
+                    if (obj === this.dragTarget) return;
+
+                    // Apply gravity
+                    obj.vy += this.physics.gravity;
+
+                    // Apply gravity well if active
+                    if (this.physics.gravityWell) {
+                        const dx = this.physics.gravityWell.x - obj.x;
+                        const dy = this.physics.gravityWell.y - obj.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const force = 200 / (distance * distance + 1);
+                        obj.vx += (dx / distance) * force * 0.01;
+                        obj.vy += (dy / distance) * force * 0.01;
+                    }
+
+                    // Apply friction
+                    obj.vx *= this.physics.friction;
+                    obj.vy *= this.physics.friction;
+
+                    // Update position
+                    obj.x += obj.vx;
+                    obj.y += obj.vy;
+
+                    // Update rotation
+                    obj.rotation += obj.rotationSpeed;
+                    obj.rotationSpeed *= 0.995;
+
+                    // Boundary collisions
+                    const rect = obj.element.getBoundingClientRect();
+                    const width = rect.width;
+                    const height = rect.height;
+
+                    if (obj.x < 0) {
+                        obj.x = 0;
+                        obj.vx = -obj.vx * this.physics.bounce;
+                        this.createCollisionEffect(obj);
+                    }
+                    if (obj.x + width > window.innerWidth) {
+                        obj.x = window.innerWidth - width;
+                        obj.vx = -obj.vx * this.physics.bounce;
+                        this.createCollisionEffect(obj);
+                    }
+                    if (obj.y < 0) {
+                        obj.y = 0;
+                        obj.vy = -obj.vy * this.physics.bounce;
+                        this.createCollisionEffect(obj);
+                    }
+                    if (obj.y + height > window.innerHeight) {
+                        obj.y = window.innerHeight - height;
+                        obj.vy = -obj.vy * this.physics.bounce;
+                        this.createCollisionEffect(obj);
+                    }
+
+                    // Element-to-element collisions
+                    this.checkCollisions(obj);
+
+                    // Update DOM
+                    obj.element.style.left = obj.x + 'px';
+                    obj.element.style.top = obj.y + 'px';
+                    obj.element.style.transform = `rotate(${obj.rotation}rad)`;
+                });
+            }
+
+            checkCollisions(obj1) {
+                this.elements.forEach(obj2 => {
+                    if (obj1 === obj2) return;
+
+                    const rect1 = obj1.element.getBoundingClientRect();
+                    const rect2 = obj2.element.getBoundingClientRect();
+
+                    if (rect1.left < rect2.right && rect1.right > rect2.left &&
+                        rect1.top < rect2.bottom && rect1.bottom > rect2.top) {
+                        
+                        // Calculate collision response
+                        const dx = (obj1.x + rect1.width / 2) - (obj2.x + rect2.width / 2);
+                        const dy = (obj1.y + rect1.height / 2) - (obj2.y + rect2.height / 2);
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 0) {
+                            const nx = dx / distance;
+                            const ny = dy / distance;
+                            
+                            // Separate objects
+                            const overlap = (rect1.width + rect2.width) / 4 - distance / 2;
+                            if (overlap > 0) {
+                                obj1.x += nx * overlap * 0.5;
+                                obj1.y += ny * overlap * 0.5;
+                                obj2.x -= nx * overlap * 0.5;
+                                obj2.y -= ny * overlap * 0.5;
+                            }
+                            
+                            // Exchange velocities with bounce
+                            const v1n = obj1.vx * nx + obj1.vy * ny;
+                            const v2n = obj2.vx * nx + obj2.vy * ny;
+                            
+                            obj1.vx += (v2n - v1n) * nx * this.physics.bounce;
+                            obj1.vy += (v2n - v1n) * ny * this.physics.bounce;
+                            obj2.vx += (v1n - v2n) * nx * this.physics.bounce;
+                            obj2.vy += (v1n - v2n) * ny * this.physics.bounce;
+                            
+                            // Add rotation
+                            obj1.rotationSpeed += (Math.random() - 0.5) * 0.1;
+                            obj2.rotationSpeed += (Math.random() - 0.5) * 0.1;
+                            
+                            this.createCollisionEffect(obj1);
+                            this.createCollisionEffect(obj2);
+                        }
+                    }
+                });
+            }
+
+            createCollisionEffect(obj) {
+                obj.element.classList.add('collision-flash');
+                setTimeout(() => obj.element.classList.remove('collision-flash'), 300);
+            }
+
+            animate() {
+                const currentTime = performance.now();
+                const deltaTime = currentTime - this.lastFrameTime;
+                
+                if (deltaTime >= 16.67) { // ~60 FPS
+                    this.updatePhysics();
+                    this.frameCount++;
+                    
+                    // Update FPS counter every second
+                    if (this.frameCount % 60 === 0) {
+                        this.fps = Math.round(1000 / deltaTime);
+                    }
+                    
+                    this.lastFrameTime = currentTime;
+                }
+                
+                requestAnimationFrame(() => this.animate());
+            }
+
+            updateUI() {
+                const fpsValue = document.getElementById('fpsValue');
+                const fpsMeter = document.getElementById('fpsMeter');
+                const elementCount = document.getElementById('elementCount');
+                const kineticEnergy = document.getElementById('kineticEnergy');
+                const simTime = document.getElementById('simTime');
+
+                setInterval(() => {
+                    fpsValue.textContent = this.fps;
+                    fpsMeter.style.width = Math.min(this.fps / 60 * 100, 100) + '%';
+                    elementCount.textContent = this.elements.length;
+                    
+                    // Calculate total kinetic energy
+                    const totalKE = this.elements.reduce((sum, obj) => {
+                        return sum + 0.5 * obj.mass * (obj.vx * obj.vx + obj.vy * obj.vy);
+                    }, 0);
+                    kineticEnergy.textContent = totalKE.toFixed(1);
+                    
+                    // Update simulation time
+                    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    simTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 100);
+            }
+
+            // Control panel methods
+            addRandomElement() {
+                const elementTypes = [
+                    { type: 'card', title: 'Navigation', content: 'Course correction initiated. ETA to destination updated.' },
+                    { type: 'button', text: '⚡ Power Systems' },
+                    { type: 'widget', value: `${(Math.random() * 100).toFixed(1)}%`, label: 'Shield Integrity' },
+                    { type: 'panel', content: 'Atmospheric processors nominal' },
+                    { type: 'button', text: '🛰️ Sensors' },
+                    { type: 'toggle', text: Math.random() > 0.5 ? 'ON' : 'OFF' },
+                    { type: 'widget', value: `${Math.floor(Math.random() * 999)}`, label: 'Units Processed' }
+                ];
+                
+                const randomConfig = elementTypes[Math.floor(Math.random() * elementTypes.length)];
+                this.createElement(randomConfig);
+            }
+
+            applyImpulse() {
+                const force = 5 + Math.random() * 10;
+                const angle = Math.random() * Math.PI * 2;
+                
+                this.elements.forEach(obj => {
+                    const distance = Math.sqrt(
+                        (obj.x - window.innerWidth / 2) ** 2 + 
+                        (obj.y - window.innerHeight / 2) ** 2
+                    );
+                    const strength = force / (distance / 100 + 1);
+                    
+                    obj.vx += Math.cos(angle) * strength;
+                    obj.vy += Math.sin(angle) * strength;
+                    obj.rotationSpeed += (Math.random() - 0.5) * 0.2;
+                });
+
+                // Visual effect
+                const flash = document.createElement('div');
+                flash.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background: radial-gradient(circle, rgba(0,122,255,0.3) 0%, transparent 70%);
+                    pointer-events: none;
+                    z-index: 999;
+                    animation: solarFlash 0.5s ease-out forwards;
+                `;
+                document.body.appendChild(flash);
+                setTimeout(() => flash.remove(), 500);
+            }
+
+            resetSimulation() {
+                // Animate elements to center
+                this.elements.forEach((obj, index) => {
+                    const targetX = window.innerWidth / 2 - 100 + (index % 3 - 1) * 120;
+                    const targetY = window.innerHeight / 2 - 100 + Math.floor(index / 3 - 1) * 120;
+                    
+                    const animate = () => {
+                        const dx = targetX - obj.x;
+                        const dy = targetY - obj.y;
+                        
+                        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                            obj.x += dx * 0.1;
+                            obj.y += dy * 0.1;
+                            obj.vx *= 0.9;
+                            obj.vy *= 0.9;
+                            obj.rotation *= 0.95;
+                            obj.rotationSpeed *= 0.9;
+                            requestAnimationFrame(animate);
+                        } else {
+                            obj.vx = (Math.random() - 0.5) * 2;
+                            obj.vy = (Math.random() - 0.5) * 2;
+                        }
+                    };
+                    
+                    setTimeout(animate, index * 100);
+                });
+            }
+
+            toggleGravityWell() {
+                if (this.physics.gravityWell) {
+                    this.physics.gravityWell = null;
+                    // Remove visual indicator
+                    const well = document.getElementById('gravityWell');
+                    if (well) well.remove();
+                } else {
+                    this.physics.gravityWell = {
+                        x: window.innerWidth / 2,
+                        y: window.innerHeight / 2
+                    };
+                    
+                    // Add visual indicator
+                    const well = document.createElement('div');
+                    well.id = 'gravityWell';
+                    well.style.cssText = `
+                        position: fixed;
+                        left: ${this.physics.gravityWell.x - 30}px;
+                        top: ${this.physics.gravityWell.y - 30}px;
+                        width: 60px;
+                        height: 60px;
+                        border: 2px solid #007AFF;
+                        border-radius: 50%;
+                        background: radial-gradient(circle, rgba(0,122,255,0.2) 0%, transparent 70%);
+                        pointer-events: none;
+                        z-index: 500;
+                        animation: gravityPulse 2s ease-in-out infinite;
+                    `;
+                    document.body.appendChild(well);
+                }
+            }
+        }
+
+        // Global functions for control panel
+        function addRandomElement() {
+            window.simulator.addRandomElement();
+        }
+
+        function applyImpulse() {
+            window.simulator.applyImpulse();
+        }
+
+        function resetSimulation() {
+            window.simulator.resetSimulation();
+        }
+
+        function toggleGravityWell() {
+            window.simulator.toggleGravityWell();
+        }
+
+        // Additional CSS animations
+        const additionalStyles = document.createElement('style');
+        additionalStyles.textContent = `
+            @keyframes solarFlash {
+                0% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+
+            @keyframes gravityPulse {
+                0%, 100% { 
+                    transform: scale(1);
+                    opacity: 0.6;
+                }
+                50% { 
+                    transform: scale(1.2);
+                    opacity: 1;
+                }
+            }
+
+            .floating-element {
+                transform-origin: center;
+                will-change: transform, left, top;
+            }
+
+            .floating-element::before {
+                content: '';
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                right: -2px;
+                bottom: -2px;
+                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+                border-radius: inherit;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                pointer-events: none;
+            }
+
+            .floating-element:hover::before {
+                opacity: 1;
+            }
+
+            .ui-button:active {
+                transform: scale(0.95);
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .floating-element {
+                    animation: none !important;
+                }
+                .stars {
+                    animation: none !important;
+                }
+            }
+
+            /* Enhanced mobile experience */
+            @media (max-width: 768px) {
+                .floating-element {
+                    transform: scale(0.85);
+                    touch-action: none;
+                }
+                
+                .control-panel {
+                    font-size: 12px;
+                }
+                
+                .control-btn {
+                    padding: 6px 12px;
+                    font-size: 11px;
+                }
+                
+                .ui-card {
+                    padding: 18px;
+                    width: 240px;
+                    min-height: 140px;
+                }
+                
+                .card-title {
+                    font-size: 18px;
+                }
+                
+                .card-content {
+                    font-size: 13px;
+                }
+            }
+
+            /* High contrast mode support */
+            @media (prefers-contrast: high) {
+                .floating-element {
+                    border: 2px solid white;
+                }
+                
+                .control-panel {
+                    border: 2px solid white;
+                    background: rgba(0, 0, 0, 0.95);
+                }
+            }
+
+            /* Accessibility improvements */
+            .floating-element:focus {
+                outline: 2px solid #007AFF;
+                outline-offset: 2px;
+            }
+
+            .control-btn:focus {
+                outline: 2px solid white;
+                outline-offset: 2px;
+            }
+
+            /* Performance optimizations */
+            .floating-element {
+                backface-visibility: hidden;
+                perspective: 1000px;
+            }
+        `;
+        document.head.appendChild(additionalStyles);
+
+        // Initialize the simulator
+        document.addEventListener('DOMContentLoaded', () => {
+            window.simulator = new MicrogravitySimulator();
+            
+            // Add keyboard shortcut hints
+            console.log('🚀 Microgravity UI Simulator Controls:');
+            console.log('• Space: Apply solar wind impulse');
+            console.log('• R: Reset orbital positions');  
+            console.log('• G: Toggle gravity well');
+            console.log('• Drag elements with mouse/touch');
+            console.log('• Click elements for interaction effects');
+        });
+
+        // Performance monitoring
+        let performanceData = {
+            frameDrops: 0,
+            averageFrameTime: 0,
+            samples: []
+        };
+
+        function monitorPerformance() {
+            const start = performance.now();
+            
+            requestAnimationFrame(() => {
+                const frameTime = performance.now() - start;
+                performanceData.samples.push(frameTime);
+                
+                if (performanceData.samples.length > 60) {
+                    performanceData.samples.shift();
+                }
+                
+                performanceData.averageFrameTime = performanceData.samples.reduce((a, b) => a + b, 0) / performanceData.samples.length;
+                
+                if (frameTime > 20) { // Frame took longer than ~50fps
+                    performanceData.frameDrops++;
+                }
+                
+                monitorPerformance();
+            });
+        }
+
+        // Adaptive quality based on performance
+        function adaptQuality() {
+            if (performanceData.averageFrameTime > 20 && window.simulator) {
+                // Reduce physics accuracy for better performance
+                window.simulator.physics.friction = Math.max(0.95, window.simulator.physics.friction - 0.01);
+                console.log('Adaptive quality: Reduced friction for better performance');
+            }
+        }
+
+        // Start performance monitoring
+        setTimeout(() => {
+            monitorPerformance();
+            setInterval(adaptQuality, 5000);
+        }, 1000);
+
+        // Error handling and recovery
+        window.addEventListener('error', (e) => {
+            console.error('Simulation error:', e.error);
+            // Attempt to recover by restarting physics if needed
+            if (window.simulator && e.error.message.includes('physics')) {
+                console.log('Attempting simulation recovery...');
+                window.simulator.elements.forEach(obj => {
+                    obj.vx = Math.max(-10, Math.min(10, obj.vx || 0));
+                    obj.vy = Math.max(-10, Math.min(10, obj.vy || 0));
+                });
+            }
+        });
+    </script>
+</body>
+</html>
