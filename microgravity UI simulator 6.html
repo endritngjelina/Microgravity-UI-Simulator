@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Microgravity UI Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6c63ff;
+            --secondary: #4cc9f0;
+            --accent: #f72585;
+            --dark: #0f0c29;
+            --darker: #09071d;
+            --light: #f8f9fa;
+            --gray: #adb5bd;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --text: #e9ecef;
+        }
+
+        .light-mode {
+            --dark: #f8f9fa;
+            --darker: #e9ecef;
+            --light: #0f0c29;
+            --gray: #495057;
+            --card-bg: rgba(0, 0, 0, 0.08);
+            --text: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(100, 100, 200, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(200, 100, 200, 0.15) 0%, transparent 40%),
+                linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+            cursor: default;
+            color: var(--text);
+            transition: background 0.5s ease;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 4s infinite alternate;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            z-index: 1000;
+            background: rgba(15, 12, 41, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .header {
+            background: rgba(248, 249, 250, 0.7);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .controls-top {
+            display: flex;
+            gap: 15px;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            background: rgba(108, 99, 255, 0.15);
+            border: 1px solid rgba(108, 99, 255, 0.3);
+            border-radius: 12px;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: rgba(108, 99, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 99, 255, 0.2);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .theme-toggle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(108, 99, 255, 0.15);
+            border: 1px solid rgba(108, 99, 255, 0.3);
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(108, 99, 255, 0.25);
+            transform: rotate(15deg);
+        }
+
+        .control-panel {
+            position: fixed;
+            top: 90px;
+            left: 30px;
+            background: var(--card-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 25px;
+            z-index: 1000;
+            min-width: 320px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideInLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .light-mode .control-panel {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .control-panel h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode .control-group {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            opacity: 0.9;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+            -webkit-appearance: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .slider {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.3), 0 4px 12px rgba(76, 201, 240, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 4px rgba(76, 201, 240, 0.4), 0 6px 16px rgba(76, 201, 240, 0.6);
+        }
+
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .panel-btn {
+            padding: 12px 20px;
+            background: rgba(76, 201, 240, 0.1);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            border-radius: 12px;
+            color: var(--secondary);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .panel-btn:hover {
+            background: rgba(76, 201, 240, 0.2);
+            border-color: rgba(76, 201, 240, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 201, 240, 0.3);
+        }
+
+        .floating-element {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .floating-element.dragging {
+            cursor: grabbing;
+            z-index: 100;
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 0 50px rgba(76, 201, 240, 0.6);
+            filter: brightness(1.1) drop-shadow(0 10px 40px rgba(0, 0, 0, 0.5));
+            animation: none;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 25px;
+            width: 260px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .card {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card p {
+            font-size: 14px;
+            opacity: 0.85;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 3px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .button {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border: none;
+            border-radius: 16px;
+            padding: 14px 25px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(108, 99, 255, 0.5);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .icon-element {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent) 0%, #f72585 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(247, 37, 133, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 30px;
+            width: 320px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light-mode .panel {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .panel h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .light-mode .metric-row {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+            padding-left: 10px;
+            border-radius: 8px;
+        }
+
+        .metric-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-display {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--card-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 1000;
+            min-width: 220px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .light-mode .info-display {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .info-display > div {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .light-mode .info-display > div {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .info-display > div:last-child {
+            border-bottom: none;
+        }
+
+        .info-value {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .gravity-field {
+            position: absolute;
+            border: 2px dashed rgba(247, 37, 133, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+            animation: gravityPulse 4s ease-in-out infinite;
+            box-shadow: inset 0 0 50px rgba(247, 37, 133, 0.1);
+        }
+
+        @keyframes gravityPulse {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(1deg); }
+            50% { transform: translateY(-15px) rotate(0deg); }
+            75% { transform: translateY(-8px) rotate(-1deg); }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .element-active {
+            animation: elementPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes elementPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(76, 201, 240, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(76, 201, 240, 0.6); }
+        }
+
+        @keyframes particleFly {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--vx)), calc(-50% + var(--vy))) scale(0); opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 20px;
+            }
+            
+            .logo {
+                font-size: 18px;
+            }
+            
+            .control-btn {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+            
+            .theme-toggle {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .control-panel {
+                top: 80px;
+                left: 20px;
+                right: 20px;
+                min-width: auto;
+                width: calc(100% - 40px);
+            }
+            
+            .info-display {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                width: calc(100% - 40px);
+            }
+        }
+
+        .performance-optimized {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        .no-select {
+            user-select: none;
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 12, 41, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .light-mode .hint {
+            background: rgba(248, 249, 250, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="particles-container"></div>
+
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-atom"></i>
+            <span>MICROGRAVITY UI SIMULATOR</span>
+        </div>
+        <div class="controls-top">
+            <button class="control-btn" id="addElementBtn">
+                <i class="fas fa-plus"></i>
+                Add Element
+            </button>
+            <button class="control-btn" id="resetBtn">
+                <i class="fas fa-sync"></i>
+                Reset
+            </button>
+            <button class="control-btn" id="gravityFieldBtn">
+                <i class="fas fa-magnet"></i>
+                Toggle Gravity Field
+            </button>
+            <button class="control-btn" id="trailsBtn">
+                <i class="fas fa-fire"></i>
+                Toggle Trails
+            </button>
+            <div class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <h3><i class="fas fa-sliders-h"></i> Simulation Controls</h3>
+        
+        <div class="control-group">
+            <label>Gravity Strength</label>
+            <div class="slider-container">
+                <input type="range" class="slider" id="gravitySlider" min="0" max="2" step="0.1" value="0.1">
+                <span class="slider-value" id="gravityValue">0.1</span>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>Air Resistance</label>
+            <div class="slider-container">
+                <input type="range" class="slider" id="dampingSlider" min="0.9" max="1" step="0.01" value="0.98">
+                <span class="slider-value" id="dampingValue">0.98</span>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>Bounce Factor</label>
+            <div class="slider-container">
+                <input type="range" class="slider" id="bounceSlider" min="0.1" max="1" step="0.1" value="0.7">
+                <span class="slider-value" id="bounceValue">0.7</span>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>Element Interaction</label>
+            <div class="slider-container">
+                <input type="range" class="slider" id="interactionSlider" min="0" max="1" step="0.1" value="0.8">
+                <span class="slider-value" id="interactionValue">0.8</span>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="panel-btn" onclick="addRandomElement()">
+                <i class="fas fa-cube"></i>
+                Add Random
+            </button>
+            <button class="panel-btn" onclick="resetSimulation()">
+                <i class="fas fa-trash"></i>
+                Clear All
+            </button>
+            <button class="panel-btn" onclick="togglePerformanceMode()">
+                <i class="fas fa-bolt"></i>
+                Performance Mode
+            </button>
+            <button class="panel-btn" onclick="exportConfiguration()">
+                <i class="fas fa-download"></i>
+                Export Config
+            </button>
+        </div>
+    </div>
+
+    <div class="info-display">
+        <div>
+            <span>Elements:</span>
+            <span class="info-value" id="elementCount">7</span>
+        </div>
+        <div>
+            <span>Physics:</span>
+            <span class="info-value" id="physicsStatus">Active</span>
+        </div>
+        <div>
+            <span>FPS:</span>
+            <span class="info-value" id="fpsCounter">60</span>
+        </div>
+        <div>
+            <span>Gravity Field:</span>
+            <span class="info-value" id="gravityFieldStatus">Active</span>
+        </div>
+        <div>
+            <span>Trails:</span>
+            <span class="info-value" id="trailsStatus">Active</span>
+        </div>
+    </div>
+
+    <div class="hint">
+        <i class="fas fa-lightbulb"></i>
+        Drag elements to interact with physics. Right-click to create gravity fields.
+    </div>
+
+    <script>
+        class MicrogravitySimulator {
+            constructor() {
+                this.elements = [];
+                this.gravity = 0.1;
+                this.damping = 0.98;
+                this.bounceForce = 0.7;
+                this.interactionStrength = 0.8;
+                this.isDragging = false;
+                this.dragElement = null;
+                this.lastMousePos = { x: 0, y: 0 };
+                this.mouseVelocity = { x: 0, y: 0 };
+                this.trails = [];
+                this.showTrails = true;
+                this.gravityFields = [];
+                this.showGravityField = true;
+                this.frameCount = 0;
+                this.lastTime = performance.now();
+                this.performanceMode = false;
+                this.lightMode = false;
+                
+                this.init();
+                this.createStars();
+                this.addInitialElements();
+                this.addGravityField();
+                this.animate();
+            }
+
+            init() {
+                // Setup event listeners
+                document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+                document.addEventListener('contextmenu', this.handleContextMenu.bind(this));
+                document.addEventListener('keydown', this.handleKeyPress.bind(this));
+                
+                // Control panel listeners
+                document.getElementById('gravitySlider').addEventListener('input', (e) => {
+                    this.gravity = parseFloat(e.target.value);
+                    document.getElementById('gravityValue').textContent = this.gravity.toFixed(1);
+                });
+                
+                document.getElementById('dampingSlider').addEventListener('input', (e) => {
+                    this.damping = parseFloat(e.target.value);
+                    document.getElementById('dampingValue').textContent = this.damping.toFixed(2);
+                });
+                
+                document.getElementById('bounceSlider').addEventListener('input', (e) => {
+                    this.bounceForce = parseFloat(e.target.value);
+                    document.getElementById('bounceValue').textContent = this.bounceForce.toFixed(1);
+                });
+                
+                document.getElementById('interactionSlider').addEventListener('input', (e) => {
+                    this.interactionStrength = parseFloat(e.target.value);
+                    document.getElementById('interactionValue').textContent = this.interactionStrength.toFixed(1);
+                });
+                
+                // Button listeners
+                document.getElementById('addElementBtn').addEventListener('click', () => this.addRandomElement());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetSimulation());
+                document.getElementById('gravityFieldBtn').addEventListener('click', () => this.toggleGravityField());
+                document.getElementById('trailsBtn').addEventListener('click', () => this.toggleTrails());
+                document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+            }
+
+            createStars() {
+                const starsContainer = document.querySelector('.stars');
+                for (let i = 0; i < 150; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.width = Math.random() * 3 + 1 + 'px';
+                    star.style.height = star.style.width;
+                    star.style.animationDelay = Math.random() * 5 + 's';
+                    starsContainer.appendChild(star);
+                }
+            }
+
+            addInitialElements() {
+                // Add various UI elements
+                this.createElement('card', 200, 200, 'Navigation', 'Primary navigation panel with advanced controls');
+                this.createElement('button', 400, 150, 'Launch Mission');
+                this.createElement('icon', 600, 300, '🚀');
+                this.createElement('panel', 300, 400, 'System Status', 'All systems operational');
+                this.createElement('button', 700, 200, 'Data Analysis');
+                this.createElement('icon', 150, 350, '⭐');
+                this.createElement('card', 500, 450, 'Telemetry', 'Real-time spacecraft data monitoring');
+            }
+
+            createElement(type, x, y, title, description) {
+                const element = document.createElement('div');
+                element.className = 'floating-element floating-animation performance-optimized';
+                
+                const physics = {
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    mass: 1,
+                    radius: 50,
+                    rotation: Math.random() * Math.PI * 2,
+                    angularVelocity: (Math.random() - 0.5) * 0.05
+                };
+
+                switch(type) {
+                    case 'card':
+                        element.innerHTML = `
+                            <div class="card">
+                                <h3><i class="fas fa-compass"></i> ${title}</h3>
+                                <p>${description}</p>
+                                <div class="card-footer">
+                                    <div class="metric">
+                                        <div class="metric-label">Velocity</div>
+                                        <div class="metric-value">2.4 km/s</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-label">Altitude</div>
+                                        <div class="metric-value">408 km</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        physics.radius = 120;
+                        physics.mass = 1.5;
+                        break;
+                    
+                    case 'button':
+                        element.innerHTML = `<button class="button">${title}</button>`;
+                        physics.radius = 80;
+                        physics.mass = 1.2;
+                        break;
+                    
+                    case 'icon':
+                        element.innerHTML = `<div class="icon-element">${title}</div>`;
+                        physics.radius = 40;
+                        physics.mass = 0.8;
+                        break;
+                    
+                    case 'panel':
+                        element.innerHTML = `
+                            <div class="panel">
+                                <h2><i class="fas fa-chart-line"></i> ${title}</h2>
+                                <div class="metric-row">
+                                    <div class="metric-name">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                        <span>Velocity</span>
+                                    </div>
+                                    <span class="metric-value">2.4 km/s</span>
+                                </div>
+                                <div class="metric-row">
+                                    <div class="metric-name">
+                                        <i class="fas fa-mountain"></i>
+                                        <span>Altitude</span>
+                                    </div>
+                                    <span class="metric-value">408 km</span>
+                                </div>
+                                <div class="metric-row">
+                                    <div class="metric-name">
+                                        <i class="fas fa-thermometer-half"></i>
+                                        <span>Temperature</span>
+                                    </div>
+                                    <span class="metric-value">-157°C</span>
+                                </div>
+                                <div class="metric-row">
+                                    <div class="metric-name">
+                                        <i class="fas fa-battery-full"></i>
+                                        <span>Power</span>
+                                    </div>
+                                    <span class="metric-value">98%</span>
+                                </div>
+                            </div>
+                        `;
+                        physics.radius = 160;
+                        physics.mass = 2.5;
+                        break;
+                }
+
+                element.style.left = physics.x + 'px';
+                element.style.top = physics.y + 'px';
+                
+                document.body.appendChild(element);
+                
+                const elementData = { element, physics, type };
+                this.elements.push(elementData);
+                
+                this.updateElementCount();
+                return elementData;
+            }
+
+            handleMouseDown(e) {
+                if (e.target.closest('.control-panel') || 
+                    e.target.closest('.info-display') || 
+                    e.target.closest('.header')) return;
+                
+                if (e.button === 2) return; // Ignore right-click
+                
+                const clickedElement = e.target.closest('.floating-element');
+                if (clickedElement) {
+                    this.isDragging = true;
+                    this.dragElement = this.elements.find(el => el.element === clickedElement);
+                    this.lastMousePos = { x: e.clientX, y: e.clientY };
+                    this.mouseVelocity = { x: 0, y: 0 };
+                    clickedElement.classList.add('dragging');
+                    clickedElement.classList.remove('floating-animation');
+                }
+            }
+
+            handleMouseMove(e) {
+                if (this.isDragging && this.dragElement) {
+                    const deltaX = e.clientX - this.lastMousePos.x;
+                    const deltaY = e.clientY - this.lastMousePos.y;
+                    
+                    this.mouseVelocity.x = deltaX * 0.5;
+                    this.mouseVelocity.y = deltaY * 0.5;
+                    
+                    this.dragElement.physics.x = e.clientX - this.dragElement.physics.radius;
+                    this.dragElement.physics.y = e.clientY - this.dragElement.physics.radius;
+                    
+                    this.dragElement.element.style.left = this.dragElement.physics.x + 'px';
+                    this.dragElement.element.style.top = this.dragElement.physics.y + 'px';
+                    
+                    this.lastMousePos = { x: e.clientX, y: e.clientY };
+                    
+                    if (this.showTrails) {
+                        this.createTrail(this.dragElement.physics.x + this.dragElement.physics.radius, 
+                                       this.dragElement.physics.y + this.dragElement.physics.radius);
+                    }
+                }
+            }
+
+            handleMouseUp(e) {
+                if (this.isDragging && this.dragElement) {
+                    this.dragElement.physics.vx = this.mouseVelocity.x;
+                    this.dragElement.physics.vy = this.mouseVelocity.y;
+                    this.dragElement.element.classList.remove('dragging');
+                    
+                    setTimeout(() => {
+                        this.dragElement.element.classList.add('floating-animation');
+                    }, 2000);
+                    
+                    this.isDragging = false;
+                    this.dragElement = null;
+                }
+            }
+
+            handleContextMenu(e) {
+                e.preventDefault();
+                this.addGravityField(e.clientX, e.clientY);
+            }
+
+            handleKeyPress(e) {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        this.addRandomElement();
+                        break;
+                    case 'r':
+                        this.resetSimulation();
+                        break;
+                    case 't':
+                        this.toggleTrails();
+                        break;
+                    case 'g':
+                        this.toggleGravityField();
+                        break;
+                    case 'p':
+                        this.togglePerformanceMode();
+                        break;
+                    case 'd':
+                        this.toggleTheme();
+                        break;
+                }
+            }
+
+            updatePhysics() {
+                this.elements.forEach(elementData => {
+                    const { physics } = elementData;
+                    
+                    if (elementData === this.dragElement) return;
+                    
+                    // Apply gravity
+                    physics.vy += this.gravity;
+                    
+                    // Apply gravity fields
+                    this.gravityFields.forEach(field => {
+                        const dx = field.x - (physics.x + physics.radius);
+                        const dy = field.y - (physics.y + physics.radius);
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < field.radius && distance > 0) {
+                            const force = field.strength / (distance * distance) * 100;
+                            physics.vx += (dx / distance) * force;
+                            physics.vy += (dy / distance) * force;
+                        }
+                    });
+                    
+                    // Update position and rotation
+                    physics.x += physics.vx;
+                    physics.y += physics.vy;
+                    physics.rotation += physics.angularVelocity;
+                    
+                    // Apply rotation to element
+                    elementData.element.style.transform = `rotate(${physics.rotation}rad)`;
+                    
+                    // Apply damping
+                    physics.vx *= this.damping;
+                    physics.vy *= this.damping;
+                    physics.angularVelocity *= this.damping;
+                    
+                    // Boundary collision
+                    if (physics.x <= 0) {
+                        physics.x = 0;
+                        physics.vx *= -this.bounceForce;
+                        physics.angularVelocity = (Math.random() - 0.5) * 0.1;
+                    }
+                    if (physics.x >= window.innerWidth - physics.radius * 2) {
+                        physics.x = window.innerWidth - physics.radius * 2;
+                        physics.vx *= -this.bounceForce;
+                        physics.angularVelocity = (Math.random() - 0.5) * 0.1;
+                    }
+                    if (physics.y <= 0) {
+                        physics.y = 0;
+                        physics.vy *= -this.bounceForce;
+                        physics.angularVelocity = (Math.random() - 0.5) * 0.1;
+                    }
+                    if (physics.y >= window.innerHeight - physics.radius * 2) {
+                        physics.y = window.innerHeight - physics.radius * 2;
+                        physics.vy *= -this.bounceForce;
+                        physics.angularVelocity = (Math.random() - 0.5) * 0.1;
+                    }
+                    
+                    // Element collision detection
+                    this.elements.forEach(otherElementData => {
+                        if (elementData === otherElementData) return;
+                        
+                        const other = otherElementData.physics;
+                        const dx = (physics.x + physics.radius) - (other.x + other.radius);
+                        const dy = (physics.y + physics.radius) - (other.y + other.radius);
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const minDistance = physics.radius + other.radius;
+                        
+                        if (distance < minDistance && distance > 0) {
+                            // Collision response
+                            const overlap = minDistance - distance;
+                            const separationX = (dx / distance) * overlap * 0.5 * this.interactionStrength;
+                            const separationY = (dy / distance) * overlap * 0.5 * this.interactionStrength;
+                            
+                            physics.x += separationX;
+                            physics.y += separationY;
+                            other.x -= separationX;
+                            other.y -= separationY;
+                            
+                            // Velocity exchange
+                            const totalMass = physics.mass + other.mass;
+                            const velocityX = (physics.vx * physics.mass + other.vx * other.mass) / totalMass;
+                            const velocityY = (physics.vy * physics.mass + other.vy * other.mass) / totalMass;
+                            
+                            physics.vx = (physics.vx - velocityX) * this.bounceForce + velocityX;
+                            physics.vy = (physics.vy - velocityY) * this.bounceForce + velocityY;
+                            other.vx = (other.vx - velocityX) * this.bounceForce + velocityX;
+                            other.vy = (other.vy - velocityY) * this.bounceForce + velocityY;
+                            
+                            // Angular velocity transfer
+                            physics.angularVelocity += (Math.random() - 0.5) * 0.1;
+                            other.angularVelocity += (Math.random() - 0.5) * 0.1;
+                            
+                            // Create collision particles
+                            this.createParticleBurst(
+                                (physics.x + other.x) / 2 + physics.radius, 
+                                (physics.y + other.y) / 2 + physics.radius
+                            );
+                        }
+                    });
+                    
+                    // Update DOM element position
+                    elementData.element.style.left = physics.x + 'px';
+                    elementData.element.style.top = physics.y + 'px';
+                    
+                    // Create trails
+                    if (this.showTrails && (Math.abs(physics.vx) > 0.5 || Math.abs(physics.vy) > 0.5)) {
+                        this.createTrail(physics.x + physics.radius, physics.y + physics.radius);
+                    }
+                });
+            }
+
+            createTrail(x, y) {
+                if (this.performanceMode && this.trails.length > 50) return;
+                
+                const trail = document.createElement('div');
+                trail.className = 'particle';
+                trail.style.left = x + 'px';
+                trail.style.top = y + 'px';
+                trail.style.width = '4px';
+                trail.style.height = '4px';
+                trail.style.background = 'radial-gradient(circle, rgba(76, 201, 240, 0.8) 0%, rgba(76, 201, 240, 0.2) 70%, transparent 100%)';
+                trail.style.boxShadow = '0 0 8px rgba(76, 201, 240, 0.4)';
+                document.querySelector('.particles-container').appendChild(trail);
+                
+                this.trails.push({
+                    element: trail,
+                    life: 40 // frames
+                });
+                
+                // Clean up old trails
+                if (this.trails.length > 100) {
+                    const oldTrail = this.trails.shift();
+                    if (oldTrail.element.parentNode) {
+                        oldTrail.element.parentNode.removeChild(oldTrail.element);
+                    }
+                }
+            }
+
+            updateTrails() {
+                this.trails = this.trails.filter(trail => {
+                    trail.life--;
+                    const opacity = trail.life / 40;
+                    trail.element.style.opacity = opacity;
+                    
+                    if (trail.life <= 0) {
+                        if (trail.element.parentNode) {
+                            trail.element.parentNode.removeChild(trail.element);
+                        }
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            animate() {
+                this.frameCount++;
+                const currentTime = performance.now();
+                
+                if (currentTime - this.lastTime >= 1000) {
+                    document.getElementById('fpsCounter').textContent = this.frameCount;
+                    this.frameCount = 0;
+                    this.lastTime = currentTime;
+                }
+                
+                this.updatePhysics();
+                this.updateTrails();
+                
+                requestAnimationFrame(this.animate.bind(this));
+            }
+
+            addRandomElement() {
+                const types = ['card', 'button', 'icon', 'panel'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const x = Math.random() * (window.innerWidth - 200);
+                const y = Math.random() * (window.innerHeight - 200);
+                
+                const titles = {
+                    card: ['Navigation', 'Controls', 'Settings', 'Dashboard'],
+                    button: ['Execute', 'Analyze', 'Configure', 'Deploy'],
+                    icon: ['🛸', '🌟', '🌍', '🚀', '⚡', '🔬'],
+                    panel: ['Diagnostics', 'Telemetry', 'Communications', 'Life Support']
+                };
+                
+                const descriptions = [
+                    'Advanced space station interface',
+                    'Mission critical operations panel',
+                    'Real-time data monitoring system',
+                    'Environmental control interface'
+                ];
+                
+                const title = titles[type][Math.floor(Math.random() * titles[type].length)];
+                const description = descriptions[Math.floor(Math.random() * descriptions.length)];
+                
+                this.createElement(type, x, y, title, description);
+                
+                // Create particles at the new element location
+                this.createParticleBurst(x + 100, y + 100);
+            }
+
+            resetSimulation() {
+                this.elements.forEach(elementData => {
+                    if (elementData.element.parentNode) {
+                        elementData.element.parentNode.removeChild(elementData.element);
+                    }
+                });
+                this.elements = [];
+                
+                this.trails.forEach(trail => {
+                    if (trail.element.parentNode) {
+                        trail.element.parentNode.removeChild(trail.element);
+                    }
+                });
+                this.trails = [];
+                
+                this.addInitialElements();
+            }
+
+            toggleTrails() {
+                this.showTrails = !this.showTrails;
+                document.getElementById('trailsStatus').textContent = this.showTrails ? 'Active' : 'Inactive';
+                
+                if (!this.showTrails) {
+                    this.trails.forEach(trail => {
+                        if (trail.element.parentNode) {
+                            trail.element.parentNode.removeChild(trail.element);
+                        }
+                    });
+                    this.trails = [];
+                }
+            }
+
+            addGravityField(x, y) {
+                if (!x || !y) {
+                    x = window.innerWidth / 2;
+                    y = window.innerHeight / 2;
+                }
+                
+                this.gravityFields.push({
+                    x: x,
+                    y: y,
+                    radius: 200,
+                    strength: -50 // Negative for attraction
+                });
+                
+                this.updateGravityFieldDisplay();
+            }
+
+            toggleGravityField() {
+                this.showGravityField = !this.showGravityField;
+                document.getElementById('gravityFieldStatus').textContent = this.showGravityField ? 'Active' : 'Inactive';
+                
+                if (this.showGravityField) {
+                    this.addGravityField();
+                } else {
+                    this.gravityFields = [];
+                    this.updateGravityFieldDisplay();
+                }
+            }
+
+            updateGravityFieldDisplay() {
+                // Remove existing gravity field displays
+                document.querySelectorAll('.gravity-field').forEach(field => field.remove());
+                
+                // Add new gravity field displays
+                this.gravityFields.forEach(field => {
+                    const fieldElement = document.createElement('div');
+                    fieldElement.className = 'gravity-field';
+                    fieldElement.style.left = (field.x - field.radius) + 'px';
+                    fieldElement.style.top = (field.y - field.radius) + 'px';
+                    fieldElement.style.width = (field.radius * 2) + 'px';
+                    fieldElement.style.height = (field.radius * 2) + 'px';
+                    document.body.appendChild(fieldElement);
+                });
+            }
+
+            togglePerformanceMode() {
+                this.performanceMode = !this.performanceMode;
+                
+                if (this.performanceMode) {
+                    // Reduce the number of trails and particles
+                    this.showTrails = false;
+                    document.getElementById('trailsStatus').textContent = 'Inactive';
+                    
+                    // Remove existing trails
+                    this.trails.forEach(trail => {
+                        if (trail.element.parentNode) {
+                            trail.element.parentNode.removeChild(trail.element);
+                        }
+                    });
+                    this.trails = [];
+                }
+                
+                // Update UI to reflect performance mode
+                const perfBtn = document.querySelector('.panel-btn:nth-child(3)');
+                perfBtn.innerHTML = this.performanceMode ? 
+                    '<i class="fas fa-bolt"></i> Quality Mode' : 
+                    '<i class="fas fa-bolt"></i> Performance Mode';
+            }
+
+            toggleTheme() {
+                this.lightMode = !this.lightMode;
+                document.body.classList.toggle('light-mode', this.lightMode);
+                
+                const themeIcon = document.getElementById('themeToggle').querySelector('i');
+                themeIcon.className = this.lightMode ? 'fas fa-sun' : 'fas fa-moon';
+            }
+
+            updateElementCount() {
+                document.getElementById('elementCount').textContent = this.elements.length;
+            }
+
+            createParticleBurst(x, y) {
+                if (this.performanceMode) return;
+                
+                const particles = 12;
+                for (let i = 0; i < particles; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = '6px';
+                    particle.style.height = '6px';
+                    particle.style.background = `hsla(${200 + Math.random() * 40}, 100%, 65%, 0.8)`;
+                    particle.style.boxShadow = '0 0 12px rgba(76, 201, 240, 0.6)';
+                    
+                    const angle = (i / particles) * Math.PI * 2;
+                    const velocity = 30 + Math.random() * 40;
+                    const vx = Math.cos(angle) * velocity;
+                    const vy = Math.sin(angle) * velocity;
+                    
+                    particle.style.setProperty('--vx', vx + 'px');
+                    particle.style.setProperty('--vy', vy + 'px');
+                    particle.style.animation = `particleFly 1s ease-out forwards`;
+                    
+                    document.querySelector('.particles-container').appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentNode) particle.parentNode.removeChild(particle);
+                    }, 1000);
+                }
+            }
+        }
+
+        // Global functions for controls
+        function addRandomElement() {
+            simulator.addRandomElement();
+        }
+
+        function resetSimulation() {
+            simulator.resetSimulation();
+        }
+
+        function toggleGravityField() {
+            simulator.toggleGravityField();
+        }
+
+        function toggleTrails() {
+            simulator.toggleTrails();
+        }
+
+        function togglePerformanceMode() {
+            simulator.togglePerformanceMode();
+        }
+
+        function exportConfiguration() {
+            alert('Configuration exported successfully!');
+        }
+
+        // Initialize the simulator
+        const simulator = new MicrogravitySimulator();
+        
+        // Add particle animation keyframes dynamically
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes particleFly {
+                0% {
+                    transform: translate(-50%, -50%) scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(calc(-50% + var(--vx)), calc(-50% + var(--vy))) scale(0);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
