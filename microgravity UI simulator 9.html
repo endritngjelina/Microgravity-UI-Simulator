@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microgravity UI Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+        }
+
+        .floating-element {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.1s ease-out;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .floating-element:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+
+        .floating-element.dragging {
+            z-index: 1000;
+            box-shadow: 0 12px 48px rgba(0, 255, 255, 0.3);
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 48px rgba(102, 126, 234, 0.4);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            width: 280px;
+            min-height: 160px;
+            backdrop-filter: blur(15px);
+        }
+
+        .card h3 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .card p {
+            color: #ccc;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .toggle {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle.active {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a47d5 100%);
+        }
+
+        .slider {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            width: 200px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .slider input {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .slider label {
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .physics-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+        }
+
+        .trajectory {
+            position: absolute;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .trajectory-point {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(0, 255, 255, 0.6);
+            border-radius: 50%;
+        }
+
+        .collision-effect {
+            position: absolute;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: particle-fade 1s ease-out forwards;
+        }
+
+        @keyframes particle-fade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        .force-field {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .velocity-vector {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 0));
+            transform-origin: left center;
+            pointer-events: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    
+    <div class="controls">
+        <button class="control-btn" onclick="addRandomElement()">Add Element</button>
+        <button class="control-btn" onclick="toggleGravity()">Toggle Gravity</button>
+        <button class="control-btn" onclick="toggleCollisions()">Collisions: ON</button>
+        <button class="control-btn" onclick="resetSimulation()">Reset</button>
+        <button class="control-btn" onclick="toggleTrajectories()">Trajectories</button>
+        <button class="control-btn" onclick="addForceField()">Force Field</button>
+    </div>
+
+    <div class="physics-info" id="physicsInfo">
+        Elements: 0<br>
+        Gravity: OFF<br>
+        Collisions: ON<br>
+        Physics Engine: Active
+    </div>
+
+    <div class="container" id="container"></div>
+
+    <script>
+        class PhysicsEngine {
+            constructor() {
+                this.elements = [];
+                this.gravity = { x: 0, y: 0 };
+                this.friction = 0.995;
+                this.collision = true;
+                this.showTrajectories = false;
+                this.forceFields = [];
+                this.animationId = null;
+                this.container = document.getElementById('container');
+                this.physicsInfo = document.getElementById('physicsInfo');
+                
+                this.init();
+            }
+
+            init() {
+                this.createStars();
+                this.addInitialElements();
+                this.bindEvents();
+                this.startPhysicsLoop();
+            }
+
+            createStars() {
+                const starsContainer = document.getElementById('stars');
+                for (let i = 0; i < 100; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.width = star.style.height = Math.random() * 3 + 1 + 'px';
+                    star.style.animationDelay = Math.random() * 3 + 's';
+                    starsContainer.appendChild(star);
+                }
+            }
+
+            addInitialElements() {
+                const elements = [
+                    { type: 'button', text: 'Launch Mission', x: 200, y: 200 },
+                    { type: 'card', title: 'Space Station Alpha', content: 'Monitoring orbital mechanics and gravitational fields in real-time simulation.', x: 500, y: 150 },
+                    { type: 'toggle', text: 'Thrusters', x: 800, y: 300 },
+                    { type: 'slider', label: 'Engine Power', x: 300, y: 400 },
+                    { type: 'button', text: 'Navigation', x: 700, y: 500 },
+                    { type: 'card', title: 'Mission Control', content: 'Advanced physics simulation with realistic collision detection and momentum conservation.', x: 100, y: 600 }
+                ];
+
+                elements.forEach(elementData => this.createElement(elementData));
+            }
+
+            createElement(data) {
+                const element = document.createElement('div');
+                element.className = 'floating-element';
+                
+                switch(data.type) {
+                    case 'button':
+                        element.className += ' button';
+                        element.textContent = data.text;
+                        break;
+                    case 'card':
+                        element.className += ' card';
+                        element.innerHTML = `<h3>${data.title}</h3><p>${data.content}</p>`;
+                        break;
+                    case 'toggle':
+                        element.className += ' toggle';
+                        element.textContent = data.text;
+                        break;
+                    case 'slider':
+                        element.className += ' slider';
+                        element.innerHTML = `<label>${data.label}</label><input type="range" min="0" max="100" value="50">`;
+                        break;
+                }
+
+                element.style.left = data.x + 'px';
+                element.style.top = data.y + 'px';
+
+                const physicsObject = {
+                    element: element,
+                    x: data.x,
+                    y: data.y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    mass: 1 + Math.random(),
+                    isDragging: false,
+                    trajectory: [],
+                    lastCollision: 0
+                };
+
+                this.elements.push(physicsObject);
+                this.container.appendChild(element);
+                this.bindElementEvents(physicsObject);
+                this.updateInfo();
+            }
+
+            bindElementEvents(physicsObject) {
+                const element = physicsObject.element;
+                let startX, startY, initialMouseX, initialMouseY;
+
+                element.addEventListener('mousedown', (e) => {
+                    physicsObject.isDragging = true;
+                    element.classList.add('dragging');
+                    startX = physicsObject.x;
+                    startY = physicsObject.y;
+                    initialMouseX = e.clientX;
+                    initialMouseY = e.clientY;
+                    physicsObject.vx = 0;
+                    physicsObject.vy = 0;
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (physicsObject.isDragging) {
+                        const deltaX = e.clientX - initialMouseX;
+                        const deltaY = e.clientY - initialMouseY;
+                        physicsObject.x = startX + deltaX;
+                        physicsObject.y = startY + deltaY;
+                        element.style.left = physicsObject.x + 'px';
+                        element.style.top = physicsObject.y + 'px';
+                    }
+                });
+
+                document.addEventListener('mouseup', (e) => {
+                    if (physicsObject.isDragging) {
+                        physicsObject.isDragging = false;
+                        element.classList.remove('dragging');
+                        
+                        // Calculate release velocity
+                        const deltaX = e.clientX - initialMouseX;
+                        const deltaY = e.clientY - initialMouseY;
+                        physicsObject.vx = deltaX * 0.1;
+                        physicsObject.vy = deltaY * 0.1;
+                    }
+                });
+            }
+
+            bindEvents() {
+                // Touch events for mobile support
+                this.container.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousedown', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    e.target.dispatchEvent(mouseEvent);
+                });
+
+                this.container.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    document.dispatchEvent(mouseEvent);
+                });
+
+                this.container.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const mouseEvent = new MouseEvent('mouseup', {});
+                    document.dispatchEvent(mouseEvent);
+                });
+            }
+
+            startPhysicsLoop() {
+                const update = () => {
+                    this.updatePhysics();
+                    this.animationId = requestAnimationFrame(update);
+                };
+                update();
+            }
+
+            updatePhysics() {
+                const now = Date.now();
+                
+                this.elements.forEach(obj => {
+                    if (obj.isDragging) return;
+
+                    // Apply gravity
+                    obj.vx += this.gravity.x;
+                    obj.vy += this.gravity.y;
+
+                    // Apply force fields
+                    this.forceFields.forEach(field => {
+                        const dx = field.x - obj.x;
+                        const dy = field.y - obj.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < field.radius) {
+                            const force = field.strength / (distance * distance + 1);
+                            obj.vx += (dx / distance) * force;
+                            obj.vy += (dy / distance) * force;
+                        }
+                    });
+
+                    // Apply friction
+                    obj.vx *= this.friction;
+                    obj.vy *= this.friction;
+
+                    // Update position
+                    obj.x += obj.vx;
+                    obj.y += obj.vy;
+
+                    // Boundary collision
+                    const rect = obj.element.getBoundingClientRect();
+                    const containerRect = this.container.getBoundingClientRect();
+                    
+                    if (obj.x < 0) {
+                        obj.x = 0;
+                        obj.vx = -obj.vx * 0.8;
+                        this.createBounceEffect(obj.x, obj.y);
+                    }
+                    if (obj.x + rect.width > containerRect.width) {
+                        obj.x = containerRect.width - rect.width;
+                        obj.vx = -obj.vx * 0.8;
+                        this.createBounceEffect(obj.x + rect.width, obj.y);
+                    }
+                    if (obj.y < 0) {
+                        obj.y = 0;
+                        obj.vy = -obj.vy * 0.8;
+                        this.createBounceEffect(obj.x, obj.y);
+                    }
+                    if (obj.y + rect.height > containerRect.height) {
+                        obj.y = containerRect.height - rect.height;
+                        obj.vy = -obj.vy * 0.8;
+                        this.createBounceEffect(obj.x, obj.y + rect.height);
+                    }
+
+                    // Update DOM position
+                    obj.element.style.left = obj.x + 'px';
+                    obj.element.style.top = obj.y + 'px';
+
+                    // Update trajectory
+                    if (this.showTrajectories) {
+                        obj.trajectory.push({ x: obj.x, y: obj.y, time: now });
+                        obj.trajectory = obj.trajectory.filter(point => now - point.time < 2000);
+                        this.drawTrajectory(obj);
+                    }
+
+                    // Update velocity vector
+                    this.drawVelocityVector(obj);
+                });
+
+                // Collision detection
+                if (this.collision) {
+                    this.checkCollisions();
+                }
+            }
+
+            checkCollisions() {
+                for (let i = 0; i < this.elements.length; i++) {
+                    for (let j = i + 1; j < this.elements.length; j++) {
+                        const obj1 = this.elements[i];
+                        const obj2 = this.elements[j];
+                        
+                        if (obj1.isDragging || obj2.isDragging) continue;
+
+                        const rect1 = obj1.element.getBoundingClientRect();
+                        const rect2 = obj2.element.getBoundingClientRect();
+
+                        if (this.isColliding(rect1, rect2)) {
+                            this.resolveCollision(obj1, obj2);
+                            this.createCollisionEffect((obj1.x + obj2.x) / 2, (obj1.y + obj2.y) / 2);
+                        }
+                    }
+                }
+            }
+
+            isColliding(rect1, rect2) {
+                return !(rect1.right < rect2.left || 
+                        rect1.left > rect2.right || 
+                        rect1.bottom < rect2.top || 
+                        rect1.top > rect2.bottom);
+            }
+
+            resolveCollision(obj1, obj2) {
+                const now = Date.now();
+                if (now - obj1.lastCollision < 100 || now - obj2.lastCollision < 100) return;
+
+                obj1.lastCollision = obj2.lastCollision = now;
+
+                // Calculate collision normal
+                const dx = obj2.x - obj1.x;
+                const dy = obj2.y - obj1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+                const nx = dx / distance;
+                const ny = dy / distance;
+
+                // Relative velocity
+                const dvx = obj2.vx - obj1.vx;
+                const dvy = obj2.vy - obj1.vy;
+                const dvn = dvx * nx + dvy * ny;
+
+                // Do not resolve if velocities are separating
+                if (dvn > 0) return;
+
+                // Collision impulse
+                const impulse = 2 * dvn / (obj1.mass + obj2.mass);
+                
+                obj1.vx += impulse * obj2.mass * nx;
+                obj1.vy += impulse * obj2.mass * ny;
+                obj2.vx -= impulse * obj1.mass * nx;
+                obj2.vy -= impulse * obj1.mass * ny;
+
+                // Separate objects
+                const overlap = 10;
+                obj1.x -= nx * overlap / 2;
+                obj1.y -= ny * overlap / 2;
+                obj2.x += nx * overlap / 2;
+                obj2.y += ny * overlap / 2;
+            }
+
+            createBounceEffect(x, y) {
+                for (let i = 0; i < 8; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    
+                    const angle = (i / 8) * Math.PI * 2;
+                    const velocity = 50 + Math.random() * 50;
+                    const vx = Math.cos(angle) * velocity;
+                    const vy = Math.sin(angle) * velocity;
+                    
+                    particle.style.transform = `translate(${vx}px, ${vy}px)`;
+                    
+                    this.container.appendChild(particle);
+                    setTimeout(() => particle.remove(), 1000);
+                }
+            }
+
+            createCollisionEffect(x, y) {
+                const effect = document.createElement('div');
+                effect.className = 'collision-effect';
+                effect.style.left = x + 'px';
+                effect.style.top = y + 'px';
+                
+                for (let i = 0; i < 12; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                    
+                    const angle = (i / 12) * Math.PI * 2;
+                    const velocity = 30 + Math.random() * 40;
+                    const vx = Math.cos(angle) * velocity;
+                    const vy = Math.sin(angle) * velocity;
+                    
+                    particle.style.transform = `translate(${vx}px, ${vy}px)`;
+                    effect.appendChild(particle);
+                }
+                
+                this.container.appendChild(effect);
+                setTimeout(() => effect.remove(), 1000);
+            }
+
+            drawTrajectory(obj) {
+                // Remove old trajectory
+                const oldTrajectory = obj.element.querySelector('.trajectory');
+                if (oldTrajectory) oldTrajectory.remove();
+
+                if (obj.trajectory.length < 2) return;
+
+                const trajectory = document.createElement('div');
+                trajectory.className = 'trajectory';
+                
+                obj.trajectory.forEach((point, index) => {
+                    if (index === 0) return;
+                    
+                    const dot = document.createElement('div');
+                    dot.className = 'trajectory-point';
+                    dot.style.left = point.x + 'px';
+                    dot.style.top = point.y + 'px';
+                    dot.style.opacity = index / obj.trajectory.length;
+                    trajectory.appendChild(dot);
+                });
+                
+                this.container.appendChild(trajectory);
+                setTimeout(() => trajectory.remove(), 100);
+            }
+
+            drawVelocityVector(obj) {
+                // Remove old vector
+                const oldVector = this.container.querySelector(`[data-vector="${obj.element.id}"]`);
+                if (oldVector) oldVector.remove();
+
+                const speed = Math.sqrt(obj.vx * obj.vx + obj.vy * obj.vy);
+                if (speed < 1) return;
+
+                const vector = document.createElement('div');
+                vector.className = 'velocity-vector';
+                vector.setAttribute('data-vector', obj.element.id || Math.random());
+                
+                const length = Math.min(speed * 5, 100);
+                const angle = Math.atan2(obj.vy, obj.vx) * 180 / Math.PI;
+                
+                vector.style.left = (obj.x + 20) + 'px';
+                vector.style.top = (obj.y + 20) + 'px';
+                vector.style.width = length + 'px';
+                vector.style.transform = `rotate(${angle}deg)`;
+                vector.style.opacity = Math.min(speed / 10, 1);
+                
+                this.container.appendChild(vector);
+                setTimeout(() => vector.remove(), 100);
+            }
+
+            updateInfo() {
+                this.physicsInfo.innerHTML = `
+                    Elements: ${this.elements.length}<br>
+                    Gravity: ${this.gravity.y === 0 ? 'OFF' : 'ON'}<br>
+                    Collisions: ${this.collision ? 'ON' : 'OFF'}<br>
+                    Force Fields: ${this.forceFields.length}<br>
+                    Physics Engine: Active
+                `;
+            }
+
+            toggleGravity() {
+                this.gravity.y = this.gravity.y === 0 ? 0.2 : 0;
+                this.updateInfo();
+            }
+
+            toggleCollisions() {
+                this.collision = !this.collision;
+                const btn = document.querySelector('.control-btn:nth-child(3)');
+                btn.textContent = `Collisions: ${this.collision ? 'ON' : 'OFF'}`;
+                this.updateInfo();
+            }
+
+            toggleTrajectories() {
+                this.showTrajectories = !this.showTrajectories;
+                const btn = document.querySelector('.control-btn:nth-child(5)');
+                btn.textContent = `Trajectories: ${this.showTrajectories ? 'ON' : 'OFF'}`;
+            }
+
+            addRandomElement() {
+                const types = ['button', 'card', 'toggle', 'slider'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                const elementData = {
+                    type: type,
+                    x: Math.random() * (window.innerWidth - 300),
+                    y: Math.random() * (window.innerHeight - 200)
+                };
+
+                switch(type) {
+                    case 'button':
+                        elementData.text = ['Deploy', 'Activate', 'Launch', 'Execute', 'Initialize'][Math.floor(Math.random() * 5)];
+                        break;
+                    case 'card':
+                        elementData.title = ['System Status', 'Navigation Data', 'Mission Log', 'Sensor Array'][Math.floor(Math.random() * 4)];
+                        elementData.content = 'Advanced UI element floating in zero gravity simulation environment.';
+                        break;
+                    case 'toggle':
+                        elementData.text = ['Shields', 'Radar', 'Comms', 'Auto-pilot'][Math.floor(Math.random() * 4)];
+                        break;
+                    case 'slider':
+                        elementData.label = ['Power', 'Speed', 'Signal', 'Thrust'][Math.floor(Math.random() * 4)];
+                        break;
+                }
+
+                this.createElement(elementData);
+            }
+
+            addForceField() {
+                const field = {
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight,
+                    radius: 100 + Math.random() * 100,
+                    strength: (Math.random() - 0.5) * 0.5
+                };
+
+                this.forceFields.push(field);
+
+                // Visual representation
+                const fieldElement = document.createElement('div');
+                fieldElement.className = 'force-field';
+                fieldElement.style.left = (field.x - field.radius) + 'px';
+                fieldElement.style.top = (field.y - field.radius) + 'px';
+                fieldElement.style.width = fieldElement.style.height = (field.radius * 2) + 'px';
+                fieldElement.style.borderColor = field.strength > 0 ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';
+                
+                this.container.appendChild(fieldElement);
+                this.updateInfo();
+
+                // Remove after 10 seconds
+                setTimeout(() => {
+                    fieldElement.remove();
+                    const index = this.forceFields.indexOf(field);
+                    if (index > -1) this.forceFields.splice(index, 1);
+                    this.updateInfo();
+                }, 10000);
+            }
+
+            reset() {
+                this.elements.forEach(obj => obj.element.remove());
+                this.elements = [];
+                this.forceFields = [];
+                document.querySelectorAll('.force-field').forEach(el => el.remove());
+                this.addInitialElements();
+            }
+        }
+
+        // Global functions for controls
+        let physicsEngine;
+
+        function addRandomElement() {
+            physicsEngine.addRandomElement();
+        }
+
+        function toggleGravity() {
+            physicsEngine.toggleGravity();
+        }
+
+        function toggleCollisions() {
+            physicsEngine.toggleCollisions();
+        }
+
+        function resetSimulation() {
+            physicsEngine.reset();
+        }
+
+        function toggleTrajectories() {
+            physicsEngine.toggleTrajectories();
+        }
+
+        function addForceField() {
+            physicsEngine.addForceField();
+        }
+
+        // Initialize the physics engine
+        window.addEventListener('load', () => {
+            physicsEngine = new PhysicsEngine();
+        });
+
+        // Prevent context menu on right click
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+</body>
+</html>
