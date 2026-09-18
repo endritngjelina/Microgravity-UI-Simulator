@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microgravity UI Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: 
+                linear-gradient(135deg, rgba(0, 0, 0, 0.8), transparent),
+                radial-gradient(ellipse at top left, #1a1a2e 0%, #16213e 30%),
+                radial-gradient(ellipse at bottom right, #0f3460 0%, #1a1a2e 50%),
+                linear-gradient(45deg, #000428 0%, #004e92 100%);
+            background-attachment: fixed;
+            overflow: hidden;
+            height: 100vh;
+            cursor: none;
+            position: relative;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: twinkle 4s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 24px;
+            z-index: 1000;
+            color: white;
+            min-width: 300px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.37),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 400;
+        }
+
+        .control-panel:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(100, 255, 218, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.45),
+                0 0 20px rgba(100, 255, 218, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .control-panel h2 {
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #64ffda, #18ffff, #00e5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .control-group:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(100, 255, 218, 0.2);
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 0.01em;
+        }
+
+        .control-group label span {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(100, 255, 218, 0.1);
+            color: #64ffda;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(100, 255, 218, 0.2));
+            outline: none;
+            appearance: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .slider:hover {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(100, 255, 218, 0.3));
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #64ffda, #18ffff);
+            cursor: pointer;
+            box-shadow: 
+                0 4px 12px rgba(100, 255, 218, 0.4),
+                0 0 0 3px rgba(100, 255, 218, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 
+                0 6px 16px rgba(100, 255, 218, 0.5),
+                0 0 0 4px rgba(100, 255, 218, 0.2);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .control-btn {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.1), rgba(100, 255, 218, 0.05));
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            border-radius: 10px;
+            color: #64ffda;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.2), rgba(100, 255, 218, 0.1));
+            border-color: rgba(100, 255, 218, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 20px rgba(100, 255, 218, 0.2),
+                0 0 20px rgba(100, 255, 218, 0.1);
+        }
+
+        .control-btn:hover::before {
+            left: 100%;
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 4px 12px rgba(100, 255, 218, 0.3),
+                inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .floating-element {
+            position: absolute;
+            border-radius: 16px;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.37),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            will-change: transform;
+        }
+
+        .floating-element:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 
+                0 16px 48px rgba(0, 0, 0, 0.5),
+                0 0 40px rgba(100, 255, 218, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .floating-element:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 50px rgba(100, 255, 218, 0.3),
+                inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .floating-element.button {
+            padding: 18px 28px;
+            background: linear-gradient(135deg, 
+                rgba(100, 255, 218, 0.15), 
+                rgba(100, 255, 218, 0.08),
+                rgba(24, 255, 255, 0.05));
+            color: #64ffda;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 140px;
+            letter-spacing: 0.02em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-element.button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .floating-element.button:hover::before {
+            left: 100%;
+        }
+
+        .floating-element.card {
+            padding: 24px;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.12), 
+                rgba(255, 255, 255, 0.06),
+                rgba(100, 255, 218, 0.03));
+            color: white;
+            width: 220px;
+            min-height: 160px;
+            border-left: 3px solid rgba(100, 255, 218, 0.5);
+        }
+
+        .floating-element.panel {
+            padding: 28px;
+            background: linear-gradient(135deg, 
+                rgba(138, 43, 226, 0.15), 
+                rgba(138, 43, 226, 0.08),
+                rgba(218, 100, 255, 0.05));
+            color: #da64ff;
+            width: 260px;
+            min-height: 190px;
+            border-left: 3px solid rgba(218, 100, 255, 0.5);
+        }
+
+        .floating-element.widget {
+            padding: 20px;
+            background: linear-gradient(135deg, 
+                rgba(255, 165, 0, 0.15), 
+                rgba(255, 165, 0, 0.08),
+                rgba(255, 193, 7, 0.05));
+            color: #ffa500;
+            width: 160px;
+            height: 110px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 3px solid rgba(255, 165, 0, 0.5);
+        }
+
+        .card h3, .panel h3 {
+            margin-bottom: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .card p, .panel p {
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+
+        .trail {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(100, 255, 218, 0.8), rgba(100, 255, 218, 0.3), transparent);
+            z-index: -1;
+            animation: trail-fade 0.8s ease-out forwards;
+        }
+
+        @keyframes trail-fade {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+        }
+
+        .custom-cursor {
+            position: fixed;
+            width: 24px;
+            height: 24px;
+            background: radial-gradient(circle, rgba(100, 255, 218, 0.9), rgba(100, 255, 218, 0.3), transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: screen;
+            transition: transform 0.1s ease;
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.4);
+        }
+
+        .custom-cursor.dragging {
+            transform: scale(1.5);
+            background: radial-gradient(circle, rgba(255, 100, 100, 0.9), rgba(255, 100, 100, 0.3), transparent);
+            box-shadow: 0 0 30px rgba(255, 100, 100, 0.6);
+        }
+
+        .stats-display {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            min-width: 220px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.37),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-display > div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-display > div:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+
+        .stats-display span {
+            font-family: 'JetBrains Mono', monospace;
+            color: #64ffda;
+            font-weight: 600;
+            background: rgba(100, 255, 218, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .gravity-well {
+            position: absolute;
+            border: 2px dashed rgba(100, 255, 218, 0.4);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(100, 255, 218, 0.08), rgba(100, 255, 218, 0.02), transparent);
+            pointer-events: none;
+            animation: gravity-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes gravity-pulse {
+            0%, 100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        .collision-effect {
+            position: absolute;
+            pointer-events: none;
+            background: radial-gradient(circle, 
+                rgba(255, 255, 255, 1), 
+                rgba(100, 255, 218, 0.8), 
+                rgba(100, 255, 218, 0.3), 
+                transparent);
+            border-radius: 50%;
+            animation: collision-burst 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes collision-burst {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(2) rotate(180deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(4) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .physics-indicator {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%) rotate(90deg);
+            transform-origin: center;
+            color: rgba(100, 255, 218, 0.6);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        }
+
+        /* Loading animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #000428 0%, #004e92 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 1;
+            transition: opacity 0.8s ease;
+        }
+
+        .loading-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(100, 255, 218, 0.2);
+            border-top: 3px solid #64ffda;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive enhancements */
+        @media (max-width: 1024px) {
+            .control-panel {
+                width: calc(100% - 40px);
+                max-width: 350px;
+                left: 20px;
+                top: 20px;
+                padding: 20px;
+            }
+            
+            .button-group {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .floating-element {
+                transform: scale(0.9);
+            }
+            
+            .stats-display {
+                bottom: 10px;
+                right: 10px;
+                font-size: 12px;
+                min-width: 180px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                position: relative;
+                width: 100%;
+                left: 0;
+                top: 0;
+                margin: 10px;
+                border-radius: 16px;
+            }
+            
+            .floating-element {
+                transform: scale(0.8);
+            }
+            
+            .floating-element.card,
+            .floating-element.panel {
+                width: 180px;
+                min-height: 120px;
+                padding: 16px;
+            }
+            
+            .physics-indicator {
+                display: none;
+            }
+        }
+
+        /* Performance optimizations */
+        .floating-element,
+        .trail,
+        .collision-effect {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            .floating-element,
+            .control-btn,
+            .trail,
+            .collision-effect {
+                animation: none !important;
+                transition: none !important;
+            }
+            
+            .stars {
+                animation: none;
+            }
+        }
+
+        /* Focus styles for keyboard navigation */
+        .control-btn:focus,
+        .slider:focus {
+            outline: 2px solid #64ffda;
+            outline-offset: 2px;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .control-panel,
+            .stats-display {
+                background: rgba(0, 0, 0, 0.9);
+                border: 2px solid #64ffda;
+            }
+
+            .floating-element {
+                border: 2px solid currentColor;
+                transform: scale(0.8);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <div class="stars"></div>
+    <div class="custom-cursor" id="cursor"></div>
+    
+    <div class="control-panel">
+        <h2>🚀 Microgravity Controls</h2>
+        
+        <div class="control-group">
+            <label>Gravity Strength: <span id="gravityValue">0.1</span></label>
+            <input type="range" class="slider" id="gravitySlider" min="0" max="0.5" step="0.01" value="0.1">
+        </div>
+        
+        <div class="control-group">
+            <label>Friction: <span id="frictionValue">0.99</span></label>
+            <input type="range" class="slider" id="frictionSlider" min="0.95" max="1" step="0.001" value="0.99">
+        </div>
+        
+        <div class="control-group">
+            <label>Bounce Factor: <span id="bounceValue">0.8</span></label>
+            <input type="range" class="slider" id="bounceSlider" min="0.1" max="1.5" step="0.1" value="0.8">
+        </div>
+        
+        <div class="button-group">
+            <button class="control-btn" onclick="addRandomElement()">Add Element</button>
+            <button class="control-btn" onclick="createGravityWell()">Gravity Well</button>
+            <button class="control-btn" onclick="resetSimulation()">Reset</button>
+            <button class="control-btn" onclick="togglePhysics()">Toggle Physics</button>
+        </div>
+    </div>
+
+    <div class="stats-display">
+        <div><strong>Elements:</strong> <span id="elementCount">0</span></div>
+        <div><strong>FPS:</strong> <span id="fpsCounter">60</span></div>
+        <div><strong>Collisions:</strong> <span id="collisionCount">0</span></div>
+        <div><strong>Active Wells:</strong> <span id="wellCount">0</span></div>
+    </div>
+
+    <div class="physics-indicator">ZERO-G SIMULATION ACTIVE</div>
+
+    <script>
+        class MicrogravitySimulator {
+            constructor() {
+                this.elements = [];
+                this.gravityWells = [];
+                this.physics = {
+                    gravity: 0.1,
+                    friction: 0.99,
+                    bounce: 0.8
+                };
+                this.isDragging = false;
+                this.dragElement = null;
+                this.mousePos = { x: 0, y: 0 };
+                this.lastTime = 0;
+                this.fps = 60;
+                this.frameCount = 0;
+                this.collisionCount = 0;
+                this.physicsEnabled = true;
+                
+                this.init();
+                this.setupEventListeners();
+                this.animate();
+                this.createInitialElements();
+            }
+
+            init() {
+                this.canvas = document.createElement('canvas');
+                this.canvas.style.position = 'absolute';
+                this.canvas.style.top = '0';
+                this.canvas.style.left = '0';
+                this.canvas.style.pointerEvents = 'none';
+                this.canvas.style.zIndex = '1';
+                document.body.appendChild(this.canvas);
+                
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            setupEventListeners() {
+                // Mouse tracking
+                document.addEventListener('mousemove', (e) => {
+                    this.mousePos = { x: e.clientX, y: e.clientY };
+                    this.updateCursor(e.clientX, e.clientY);
+                });
+
+                // Touch support
+                document.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.mousePos = { x: touch.clientX, y: touch.clientY };
+                });
+
+                // Control sliders
+                document.getElementById('gravitySlider').addEventListener('input', (e) => {
+                    this.physics.gravity = parseFloat(e.target.value);
+                    document.getElementById('gravityValue').textContent = e.target.value;
+                });
+
+                document.getElementById('frictionSlider').addEventListener('input', (e) => {
+                    this.physics.friction = parseFloat(e.target.value);
+                    document.getElementById('frictionValue').textContent = e.target.value;
+                });
+
+                document.getElementById('bounceSlider').addEventListener('input', (e) => {
+                    this.physics.bounce = parseFloat(e.target.value);
+                    document.getElementById('bounceValue').textContent = e.target.value;
+                });
+            }
+
+            createInitialElements() {
+                // Create diverse UI elements
+                this.createElement('button', 'Launch Mission', 200, 200);
+                this.createElement('card', '<h3>System Status</h3><p>All systems operational. Gravity simulation active. Ready for interaction.</p>', 400, 300);
+                this.createElement('panel', '<h3>Navigation</h3><p>Use mouse to drag elements. Adjust physics parameters in the control panel.</p>', 600, 150);
+                this.createElement('widget', '<strong>Velocity</strong><br>Monitor', 800, 400);
+                this.createElement('button', 'Engage Thrusters', 300, 500);
+                this.createElement('card', '<h3>Mission Log</h3><p>Microgravity environment successfully established. UI elements responding to physics simulation.</p>', 700, 500);
+            }
+
+            createElement(type, content, x, y) {
+                const element = document.createElement('div');
+                element.className = `floating-element ${type}`;
+                element.innerHTML = content;
+                element.style.left = x + 'px';
+                element.style.top = y + 'px';
+                
+                const elementData = {
+                    dom: element,
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    mass: type === 'card' ? 2 : type === 'panel' ? 2.5 : 1,
+                    radius: type === 'button' ? 30 : type === 'widget' ? 35 : 50,
+                    type: type,
+                    lastCollision: 0
+                };
+
+                this.setupElementEvents(element, elementData);
+                document.body.appendChild(element);
+                this.elements.push(elementData);
+                this.updateElementCount();
+            }
+
+            setupElementEvents(element, elementData) {
+                const startDrag = (e) => {
+                    e.preventDefault();
+                    this.isDragging = true;
+                    this.dragElement = elementData;
+                    element.style.zIndex = '1000';
+                    
+                    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                    
+                    this.dragOffset = {
+                        x: clientX - elementData.x,
+                        y: clientY - elementData.y
+                    };
+                };
+
+                const drag = (e) => {
+                    if (this.isDragging && this.dragElement === elementData) {
+                        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                        
+                        elementData.x = clientX - this.dragOffset.x;
+                        elementData.y = clientY - this.dragOffset.y;
+                        
+                        // Add some velocity based on mouse movement
+                        elementData.vx = (clientX - this.mousePos.x) * 0.2;
+                        elementData.vy = (clientY - this.mousePos.y) * 0.2;
+                        
+                        this.createTrail(elementData.x, elementData.y);
+                    }
+                };
+
+                const endDrag = () => {
+                    if (this.isDragging && this.dragElement === elementData) {
+                        this.isDragging = false;
+                        this.dragElement = null;
+                        element.style.zIndex = 'auto';
+                        
+                        // Give it a little boost
+                        elementData.vx += (Math.random() - 0.5) * 5;
+                        elementData.vy += (Math.random() - 0.5) * 5;
+                    }
+                };
+
+                element.addEventListener('mousedown', startDrag);
+                element.addEventListener('touchstart', startDrag);
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('touchmove', drag);
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
+            }
+
+            updatePhysics() {
+                if (!this.physicsEnabled) return;
+
+                this.elements.forEach(element => {
+                    if (element === this.dragElement) return;
+
+                    // Apply gravity wells
+                    this.gravityWells.forEach(well => {
+                        const dx = well.x - element.x;
+                        const dy = well.y - element.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < well.radius && distance > 20) {
+                            const force = well.strength / (distance * distance);
+                            element.vx += dx * force;
+                            element.vy += dy * force;
+                        }
+                    });
+
+                    // Apply global gravity (downward)
+                    element.vy += this.physics.gravity;
+
+                    // Apply friction
+                    element.vx *= this.physics.friction;
+                    element.vy *= this.physics.friction;
+
+                    // Update position
+                    element.x += element.vx;
+                    element.y += element.vy;
+
+                    // Boundary collision with bounce
+                    if (element.x <= element.radius) {
+                        element.x = element.radius;
+                        element.vx = -element.vx * this.physics.bounce;
+                        this.createCollisionEffect(element.x, element.y);
+                    }
+                    if (element.x >= window.innerWidth - element.radius) {
+                        element.x = window.innerWidth - element.radius;
+                        element.vx = -element.vx * this.physics.bounce;
+                        this.createCollisionEffect(element.x, element.y);
+                    }
+                    if (element.y <= element.radius) {
+                        element.y = element.radius;
+                        element.vy = -element.vy * this.physics.bounce;
+                        this.createCollisionEffect(element.x, element.y);
+                    }
+                    if (element.y >= window.innerHeight - element.radius) {
+                        element.y = window.innerHeight - element.radius;
+                        element.vy = -element.vy * this.physics.bounce;
+                        this.createCollisionEffect(element.x, element.y);
+                    }
+
+                    // Update DOM position
+                    element.dom.style.left = element.x + 'px';
+                    element.dom.style.top = element.y + 'px';
+                });
+
+                // Element-to-element collisions
+                this.checkCollisions();
+            }
+
+            checkCollisions() {
+                for (let i = 0; i < this.elements.length; i++) {
+                    for (let j = i + 1; j < this.elements.length; j++) {
+                        const a = this.elements[i];
+                        const b = this.elements[j];
+                        
+                        const dx = b.x - a.x;
+                        const dy = b.y - a.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const minDistance = a.radius + b.radius;
+
+                        if (distance < minDistance && Date.now() - Math.max(a.lastCollision, b.lastCollision) > 100) {
+                            // Collision detected
+                            this.resolveCollision(a, b, dx, dy, distance, minDistance);
+                            this.createCollisionEffect((a.x + b.x) / 2, (a.y + b.y) / 2);
+                            this.collisionCount++;
+                            a.lastCollision = b.lastCollision = Date.now();
+                        }
+                    }
+                }
+            }
+
+            resolveCollision(a, b, dx, dy, distance, minDistance) {
+                // Separate elements
+                const overlap = minDistance - distance;
+                const separationX = (dx / distance) * overlap * 0.5;
+                const separationY = (dy / distance) * overlap * 0.5;
+                
+                a.x -= separationX;
+                a.y -= separationY;
+                b.x += separationX;
+                b.y += separationY;
+
+                // Calculate collision response
+                const totalMass = a.mass + b.mass;
+                const relativeVelX = b.vx - a.vx;
+                const relativeVelY = b.vy - a.vy;
+                
+                const normalX = dx / distance;
+                const normalY = dy / distance;
+                
+                const relativeVelInNormal = relativeVelX * normalX + relativeVelY * normalY;
+                
+                if (relativeVelInNormal > 0) return; // Objects separating
+                
+                const impulse = 2 * relativeVelInNormal / totalMass * this.physics.bounce;
+                
+                a.vx += impulse * b.mass * normalX;
+                a.vy += impulse * b.mass * normalY;
+                b.vx -= impulse * a.mass * normalX;
+                b.vy -= impulse * a.mass * normalY;
+            }
+
+            createTrail(x, y) {
+                const trail = document.createElement('div');
+                trail.className = 'trail';
+                trail.style.left = (x - 4) + 'px';
+                trail.style.top = (y - 4) + 'px';
+                trail.style.width = '8px';
+                trail.style.height = '8px';
+                document.body.appendChild(trail);
+
+                // Remove trail after animation
+                setTimeout(() => trail.remove(), 800);
+            }
+
+            createCollisionEffect(x, y) {
+                const effect = document.createElement('div');
+                effect.className = 'collision-effect';
+                effect.style.left = (x - 15) + 'px';
+                effect.style.top = (y - 15) + 'px';
+                effect.style.width = '30px';
+                effect.style.height = '30px';
+                document.body.appendChild(effect);
+
+                // Add particle burst effect
+                for (let i = 0; i < 6; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = '4px';
+                    particle.style.height = '4px';
+                    particle.style.background = '#64ffda';
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    
+                    const angle = (i * 60) * Math.PI / 180;
+                    const velocity = 50 + Math.random() * 30;
+                    const vx = Math.cos(angle) * velocity;
+                    const vy = Math.sin(angle) * velocity;
+                    
+                    particle.style.animation = `particle-burst-${i} 0.8s ease-out forwards`;
+                    
+                    // Create unique keyframe for each particle
+                    const keyframes = `
+                        @keyframes particle-burst-${i} {
+                            0% {
+                                transform: translate(0, 0) scale(1);
+                                opacity: 1;
+                            }
+                            100% {
+                                transform: translate(${vx}px, ${vy}px) scale(0);
+                                opacity: 0;
+                            }
+                        }
+                    `;
+                    
+                    const style = document.createElement('style');
+                    style.textContent = keyframes;
+                    document.head.appendChild(style);
+                    
+                    document.body.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        particle.remove();
+                        style.remove();
+                    }, 800);
+                }
+
+                setTimeout(() => effect.remove(), 600);
+            }
+
+            updateCursor(x, y) {
+                const cursor = document.getElementById('cursor');
+                cursor.style.left = (x - 12) + 'px';
+                cursor.style.top = (y - 12) + 'px';
+                
+                // Add dragging state to cursor
+                if (this.isDragging) {
+                    cursor.classList.add('dragging');
+                } else {
+                    cursor.classList.remove('dragging');
+                }
+            }
+
+            updateStats() {
+                document.getElementById('elementCount').textContent = this.elements.length;
+                document.getElementById('fpsCounter').textContent = Math.round(this.fps);
+                document.getElementById('collisionCount').textContent = this.collisionCount;
+                document.getElementById('wellCount').textContent = this.gravityWells.length;
+            }
+
+            updateElementCount() {
+                this.updateStats();
+            }
+
+            animate(currentTime) {
+                // Calculate FPS
+                if (currentTime - this.lastTime >= 1000) {
+                    this.fps = this.frameCount;
+                    this.frameCount = 0;
+                    this.lastTime = currentTime;
+                    this.updateStats();
+                }
+                this.frameCount++;
+
+                this.updatePhysics();
+                this.drawCanvas();
+                requestAnimationFrame((time) => this.animate(time));
+            }
+
+            drawCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw gravity wells
+                this.gravityWells.forEach(well => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(well.x, well.y, well.radius, 0, Math.PI * 2);
+                    this.ctx.strokeStyle = 'rgba(100, 255, 218, 0.3)';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.setLineDash([5, 5]);
+                    this.ctx.stroke();
+                    this.ctx.setLineDash([]);
+                });
+            }
+        }
+
+        // Global functions for controls
+        let simulator;
+
+        function addRandomElement() {
+            const types = ['button', 'card', 'panel', 'widget'];
+            const contents = {
+                button: ['Execute Command', 'Initialize Systems', 'Deploy Module', 'Scan Area', 'Activate Shield'],
+                card: [
+                    '<h3>Sensor Array</h3><p>Detecting nearby objects and monitoring environmental conditions.</p>',
+                    '<h3>Power Systems</h3><p>Energy levels optimal. Backup generators online and ready.</p>',
+                    '<h3>Communications</h3><p>Signal strength strong. Maintaining contact with mission control.</p>'
+                ],
+                panel: [
+                    '<h3>Life Support</h3><p>Oxygen levels normal. Temperature controlled. All systems green.</p>',
+                    '<h3>Navigation</h3><p>Course plotting complete. Trajectory calculations verified and locked.</p>'
+                ],
+                widget: ['<strong>Altitude</strong><br>Monitor', '<strong>Speed</strong><br>Indicator', '<strong>Fuel</strong><br>Gauge']
+            };
+            
+            const type = types[Math.floor(Math.random() * types.length)];
+            const content = contents[type][Math.floor(Math.random() * contents[type].length)];
+            const x = Math.random() * (window.innerWidth - 200) + 100;
+            const y = Math.random() * (window.innerHeight - 200) + 100;
+            
+            simulator.createElement(type, content, x, y);
+        }
+
+        function createGravityWell() {
+            const well = {
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                radius: 80 + Math.random() * 40,
+                strength: 0.5 + Math.random() * 0.5
+            };
+            
+            simulator.gravityWells.push(well);
+            
+            const wellElement = document.createElement('div');
+            wellElement.className = 'gravity-well';
+            wellElement.style.left = (well.x - well.radius) + 'px';
+            wellElement.style.top = (well.y - well.radius) + 'px';
+            wellElement.style.width = (well.radius * 2) + 'px';
+            wellElement.style.height = (well.radius * 2) + 'px';
+            document.body.appendChild(wellElement);
+            
+            // Remove after 10 seconds
+            setTimeout(() => {
+                wellElement.remove();
+                const index = simulator.gravityWells.indexOf(well);
+                if (index > -1) simulator.gravityWells.splice(index, 1);
+            }, 10000);
+        }
+
+        function resetSimulation() {
+            simulator.elements.forEach(element => element.dom.remove());
+            simulator.elements = [];
+            simulator.gravityWells = [];
+            simulator.collisionCount = 0;
+            document.querySelectorAll('.gravity-well').forEach(well => well.remove());
+            simulator.createInitialElements();
+        }
+
+        function togglePhysics() {
+            simulator.physicsEnabled = !simulator.physicsEnabled;
+            document.querySelector('.physics-indicator').textContent = 
+                simulator.physicsEnabled ? 'ZERO-G SIMULATION ACTIVE' : 'PHYSICS PAUSED';
+        }
+
+        // Initialize the simulator
+        window.addEventListener('DOMContentLoaded', () => {
+            // Show loading animation
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            setTimeout(() => {
+                simulator = new MicrogravitySimulator();
+                
+                // Hide loading overlay after initialization
+                setTimeout(() => {
+                    loadingOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        loadingOverlay.remove();
+                    }, 800);
+                }, 500);
+            }, 100);
+        });
+    </script>
+</body>
+</html>
